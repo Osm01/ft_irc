@@ -27,8 +27,8 @@ int main()
 	srv_addrlen = sizeof (srv_addr);
     if (bind(srv_socket, (const sockaddr *) &srv_addr , srv_addrlen) == -1)
 		return (std::cerr << "ERROR : bind the endpoint of socket" << std::endl, EXIT_FAILURE);
-	if (getsockname(srv_socket, (sockaddr *) &data, &data_len) == -1)
-		return (std::cerr << "ERROR : cannot get socket name", 0);
+	// if (getsockname(srv_socket, (sockaddr *) &data, &data_len) == -1)
+	// 	return (std::cerr << "ERROR : cannot get socket name", 0);
 	if (listen(srv_socket, 2) == -1)
 		return (std::cerr << "ERROR : listing for socket" << std::endl , EXIT_FAILURE);
 
@@ -41,12 +41,14 @@ int main()
 	event.data.fd = srv_socket;
 	if (epoll_ctl(epoll_fd, EPOLL_CTL_ADD, srv_socket, &event) == -1)
 		return (std::cerr << "ERROR : EPOOL CTL" << std::endl, EXIT_FAILURE);
-	std::vector<struct epoll_event> events(10);
+	std::vector<struct epoll_event> events(1024);
 	while (1)
 	{
 		int num_event = 0;
 		if ((num_event = epoll_wait(epoll_fd, events.data(), events.size(), -1)) == -1)
 			return (std::cerr << "ERROR : EPOOL WAIT" << std::endl, 0);
+		if (num_event == events.size())
+			events.resize(events.size() * 2);
 		for (int i = 0; i < num_event; i ++)
 		{
 			if (events[i].data.fd == srv_socket)
@@ -58,6 +60,25 @@ int main()
 				cli_event.events = EPOLLIN | EPOLLOUT;
 				if (epoll_ctl(epoll_fd, EPOLL_CTL_ADD, cli_socket, &cli_event) == -1)
 					return (std::cerr << "ERROR : EPOOL CTL FOR CLIENT" << std::endl, EXIT_FAILURE);
+				std::cout << "CONNECTION ACCEPTED" << std::endl;
+			}
+			else
+			{
+				char buffer[1024];
+				if (events[i].events & EPOLLIN)
+				{
+					int nb_byte = read(events[i].data.fd, buffer, 1024);
+					if (nb_byte == -1)
+						return (std::cerr << "ERROR : read data of user" << std::endl, 0);
+					if (nb_byte == 0)
+						std::cerr << "ERROR : connection should close" << std::endl;
+					buffer[nb_byte] = 0;
+				}
+				else if (events[i].events & EPOLLOUT)
+				{
+					std::cout << "RESPONDE BY : " << buffer;
+					 // responde
+				}
 			}
 		}
 	}
