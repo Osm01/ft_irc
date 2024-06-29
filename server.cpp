@@ -9,6 +9,7 @@ Server::Server(int port, std::string pass) : Events(1024)
     Server_Socket = 0;
 	this->port = port;
 	this->password = pass;
+	this->Client_addrlen = sizeof(Client_addr);
     std::memset(&Server_addr, 0, sizeof(Server_addr));
 	// opt = 1 to enable to resue the socket on implimentation of Set_ReuseSocket()
 	opt = 1;
@@ -34,7 +35,7 @@ int	Server::Bind_Socket()
 	Server_addr.sin_port = htons(this->port);
 	Server_addr.sin_addr.s_addr = INADDR_ANY;
 	Server_addrlen = sizeof (Server_addr);
-	if (bind(Server_Socket, (const sockaddr *) &Server_addr, Server_addrlen) == -1)
+	if (bind(Server_Socket, (const struct sockaddr *) &Server_addr, Server_addrlen) == -1)
 		return (std::cerr << RED << "ERROR : Bind Socket" << RESET << std::endl, -1);
 	return (1);
 }
@@ -49,9 +50,44 @@ int	Server::Listen()
 int	Server::Setup_Sever()
 {
 	if (Create_Socket() && Set_ReuseSocket() && Bind_Socket() && Listen())
-		return (1);
-	std::cout << GREEN << "SUCCESFULLY SETUP SERVER" << RESET << std::endl;
+		return (std::cout << GREEN << "SUCCESFULLY SETUP SERVER" << RESET << std::endl, 1);
 	return (-1);
+}
+
+void    Server::Handle_New_Connection()
+{
+	if ((Client_Socket = accept(Server_Socket, (struct sockaddr *)&Client_addr, &Client_addrlen)) == -1)
+			return ((void)(std::cerr << RED <<"ERROR : Accept Connection " <<RESET <<std::endl));
+	Client_event.data.fd = Client_Socket;
+	Client_event.events = EPOLLIN | EPOLLOUT;
+	if (epoll_ctl(epoll_fd, EPOLL_CTL_ADD, Client_Socket, &Client_event) == -1)
+		return ((void)(std::cerr << RED << "ERROR : EPOOL CTL ADD CLIENT" << RESET << std::endl));
+}
+
+void    Server::Handle_Close_Connection(int i)
+{
+	if (epoll_ctl(epoll_fd, EPOLL_CTL_DEL, Events[i].data.fd, NULL) == -1)
+			return ((void)(std::cerr << RED << "ERROR : EPOOL CTL CLIENT DEL" << RESET << std::endl));
+	close(Events[i].data.fd);
+	std::cout << BLUE << "ERROR : Connection of Client closed" <<  RESET << std::endl;
+}
+
+void    Server::Handle_Client_Data(int i)
+{
+	char buffer[1024];
+	if (Events[i].events & EPOLLIN)
+	{
+		int nb_byte = read(Events[i].data.fd, buffer, 1024);
+		if (nb_byte == -1)
+			return ((void)(std::cerr << RED << "ERROR : Read data on User Socket" << RESET << std::endl));
+		if (nb_byte == 0)
+			Handle_Close_Connection(i);
+		else
+		{
+			buffer[nb_byte] = 0;
+			std::cout << buffer ;
+		}
+	}
 }
 
 int	Server::Multiplexing()
@@ -62,50 +98,24 @@ int	Server::Multiplexing()
 	Event.events = EPOLLIN;
 	Event.data.fd = Server_Socket;
 	if (epoll_ctl(epoll_fd, EPOLL_CTL_ADD, Server_Socket, &Event) == -1)
-		return (std::cerr << RED << "ERROR : EPOLL CTL" << RESET << std::endl, -1);
+		return (std::cerr << RED << "ERROR : EPOLL CTL ADD SERVER" << RESET << std::endl, -1);
 	while (1)
 	{
 		int num_event = 0;
 		if ((num_event = epoll_wait(epoll_fd, Events.data(), Events.size(), -1)) == -1)
 			return (std::cerr << RED << "ERROR : EPOOL WAIT" <<  RESET << std::endl, 0);
-		if (num_event == static_cast<int>(Events.size()))
+		if (num_event == (int)(Events.size()))
 			Events.resize(Events.size() * 2);
 		for (int i = 0; i < num_event; i ++)
 		{
 			if (Events[i].data.fd == Server_Socket)
-			{
-				if ((Client_Socket = accept(Server_Socket, (struct sockaddr *)&Client_addr, &Client_addrlen)) == -1)
-					return (std::cerr << RED <<"ERROR : Accept Connection" << RESET <<std::endl, -1);
-				Client_event.data.fd = Client_Socket;
-				Client_event.events = EPOLLIN | EPOLLOUT;
-				if (epoll_ctl(epoll_fd, EPOLL_CTL_ADD, Client_Socket, &Client_event) == -1)
-					return (std::cerr << RED << "ERROR : EPOOL CTL CLIENT" << RESET << std::endl, -1);
-			}
+				Handle_New_Connection();
 			else
-			{
-				char buffer[1024];
-				if (Events[i].events & EPOLLIN)
-				{
-					int nb_byte = read(Events[i].data.fd, buffer, 1024);
-					if (nb_byte == -1)
-						return (std::cerr << RED << "ERROR : Read data on User Socket" << RESET << std::endl, -1);
-					if (nb_byte == 0)
-					{
-						if (epoll_ctl(epoll_fd, EPOLL_CTL_DEL, Events[i].data.fd, NULL) == -1)
-							return (std::cerr << RED << "ERROR : EPOOL CTL CLIENT" << RESET << std::endl, -1);
-						close(Events[i].data.fd);
-						std::cerr << BLUE << "ERROR : Connection of Client closed" <<  RESET << std::endl;
-					}
-					buffer[nb_byte] = 0;
-					
-				}
-				else if (Events[i].events & EPOLLOUT)
-				{
-					std::cout << "RESPONDE BY : " << buffer;
-					 // responde
-				}
-			}
+				Handle_Client_Data(i);
 		}
 	}
 	return (1);
 }
+
+Server::~Server()
+{}

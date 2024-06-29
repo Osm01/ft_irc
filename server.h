@@ -12,6 +12,7 @@
 #include <unistd.h>
 #include <sys/epoll.h>
 #include <vector>
+#include <cerrno>
 
 
 # define RED "\033[31m"
@@ -45,6 +46,9 @@ public :
     int		Listen();
     int     Setup_Sever();
     int     Multiplexing();
+    void    Handle_New_Connection();
+    void    Handle_Client_Data(int i);
+    void    Handle_Close_Connection(int i);
     ~Server();
 };
 
