@@ -18,14 +18,14 @@ Server::Server(int port, std::string pass) : Events(1024)
 int	Server::Create_Socket()
 {
 	if ((Server_Socket = socket(AF_INET, SOCK_STREAM, 0)) == -1)
-		return (std::cerr <<  RED << "ERROR : Socket CREATING" << RESET << std::endl, -1);
+		return (std::cerr <<  RED << "ERROR : Socket CREATING" << RESET << std::endl, 0);
     return (1);
 }
 
 int	Server::Set_ReuseSocket()
 {
 	if (setsockopt(Server_Socket, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)) == -1)
-		return (std::cerr <<  RED << "ERROR : On reusing the port" << RESET << std::endl, -1);
+		return (std::cerr <<  RED << "ERROR : On reusing the port" << RESET << std::endl, 0);
 	return (1);
 }
 
@@ -36,14 +36,14 @@ int	Server::Bind_Socket()
 	Server_addr.sin_addr.s_addr = INADDR_ANY;
 	Server_addrlen = sizeof (Server_addr);
 	if (bind(Server_Socket, (const struct sockaddr *) &Server_addr, Server_addrlen) == -1)
-		return (std::cerr << RED << "ERROR : Bind Socket" << RESET << std::endl, -1);
+		return (std::cerr << RED << "ERROR : Bind Socket" << RESET << std::endl, 0);
 	return (1);
 }
 
 int	Server::Listen()
 {
 	if (listen(Server_Socket, 100) == -1)
-		return (std::cerr << RED << "ERROR : LISTING FAILED" << RESET << std::endl, -1);
+		return (std::cerr << RED << "ERROR : LISTING FAILED" << RESET << std::endl, 0);
 	return (1);
 }
 
@@ -51,7 +51,7 @@ int	Server::Setup_Sever()
 {
 	if (Create_Socket() && Set_ReuseSocket() && Bind_Socket() && Listen())
 		return (std::cout << GREEN << "SUCCESFULLY SETUP SERVER" << RESET << std::endl, 1);
-	return (-1);
+	return (0);
 }
 
 void    Server::Handle_New_Connection()
@@ -99,6 +99,7 @@ int	Server::Multiplexing()
 	Event.data.fd = Server_Socket;
 	if (epoll_ctl(epoll_fd, EPOLL_CTL_ADD, Server_Socket, &Event) == -1)
 		return (std::cerr << RED << "ERROR : EPOLL CTL ADD SERVER" << RESET << std::endl, -1);
+	std::map<int , Client> clients;
 	while (1)
 	{
 		int num_event = 0;

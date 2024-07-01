@@ -3,7 +3,7 @@ NAME = server
 COMPI = c++ -std=c++98
 ERRORS = -Wall -Wextra -Werror
 
-CPP_FILES = server.cpp ft_irc.cpp
+CPP_FILES = server.cpp chanel.cpp ft_irc.cpp
 
 all : $(NAME)
 
