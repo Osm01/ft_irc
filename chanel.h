@@ -31,39 +31,52 @@ typedef struct s_password
 
 typedef struct s_permission
 {
-	bool				invite_only;
-	bool				restrictive_topic;
-	double				max_user;
+	bool						invite_only;
+	bool						restrictive_topic;
+	double						max_user;
 	// op_privileges , int for socket client as (ID) and int for status 
 	std::map<std::string , int>	op_privileges;
 }						t_permission;
 
 class Chanel
 {
-    private :
-		std::string				chanel_name;
-        std::string				topic;
-		int						admin_fd;
-        std::map<int , Client >	users;
-		t_password				password_info;
-		t_permission			permision_info;
+    public :
+		std::string					chanel_global_name;
+        std::string					topic;
+		int							admin_fd;
+        std::map<int , Client >		users;
+		std::vector<std::string>	list_user_invited;
+		t_password					password_info;
+		t_permission				permision_info;
 
-		Chanel(const Chanel &copy);
-		Chanel	&operator=(const Chanel &copy);
 	public :
-		Chanel(int admin, std::string &chanel_name , std::string &topic);
+		Chanel(int admin, std::string chanel_name , std::string topic);
 		~Chanel();
-		void	invite_user(std::map<int, Client> &server_users, int client_fd_ask ,int user_to_invite);
-		void	join_user(int fd_new_user, std::map<int, Client> &server_users);
+		// void	invite_user(std::map<int, Client> &server_users, int client_fd_ask ,int user_to_invite);
 		int		Check_UserOnChanel(int fd_user);
-		int		Check_UserOnServer(std::map<int, Client> &server_users , int fd_user);
-		// void	kick_user(std::string &username);
-		// void	set_new_topic(std::string &topic);
+		void	Add_User(int fd_new_user, Client &client);
+		void	kick_user(std::string username, std::string &username_to_kick, std::map<int, \
+				Client> &server_users);
+		void	set_new_topic(int fd_user, std::string &topic);
+		void	invite_user(std::string username, std::map<int, Client> &server_users);
 		// void	set_password(bool status,  const std::string &pass);
 		// void	set_invite_only(bool status);
 		// void	set_restrictive_topic(bool status);
 		// void	set_max_user(double max);
 		// void	set_op_privileges(std::string &username, int status);
 };
+
+int			Check_UserOnServer(std::map<int, Client> &server_users , int fd_user);
+int			Check_Existng_Chanel(std::string &name , std::map<std::string, Chanel> &chanels);
+void		join_user(std::string &chanel_name, std::map<std::string , Chanel> &chanels, \
+			int fd_new_user, std::map<int, Client> &server_users);
+void		Kick_manager(int fd_user_cmd, std::string &user_to_kick, std::string &chanel_name, \
+			std::map<std::string, Chanel> &chanels, std::map<int, Client> &server_users);
+std::string	convert_fd_to_name(int fd, std::map<int, Client> &server_users);
+int			convert_name_to_fd(std::string name, std::map<int, Client> &server_users);
+void		topic_manager(int fd_user, std::string &topic, std::string &chanel_name ,std::map<int, Client> &server_users, \
+			std::map<std::string , Chanel> &chanels);
+void		Invite_manager(int fd_user, std::string &to_invite, std::string chanel_name, \
+			std::map<int,Client> &server_users, std::map<std::string , Chanel> &chanels);
 
 #endif
