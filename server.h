@@ -13,7 +13,8 @@
 #include <sys/epoll.h>
 #include <vector>
 #include <cerrno>
-
+#include "client.hpp"
+#include "chanel.h"
 
 # define RED "\033[31m"
 # define GREEN "\033[32m"
@@ -22,6 +23,8 @@
 # define PURPLE "\033[35m"
 # define CYAN "\033[36m"
 # define RESET "\033[0m"
+# define WHITE "\033[37m"
+# define PASSWORD "soso+"
 
 class Server {
 private :
@@ -46,8 +49,9 @@ public :
     int		Listen();
     int     Setup_Sever();
     int     Multiplexing();
-    void    Handle_New_Connection();
-    void    Handle_Client_Data(int i);
+    int   Handle_New_Connection();
+    void    Handle_Client_Data(int i,std::map<int, Client> &client, \
+            std::map<std::string , Chanel>	&chanels);
     void    Handle_Close_Connection(int i);
     ~Server();
 };

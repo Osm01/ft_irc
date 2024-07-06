@@ -6,11 +6,13 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <cstring>
+#include <string>
 #include <unistd.h>
 #include <sys/epoll.h>
 #include <vector>
 #include <map>
 #include <cerrno>
+#include <algorithm>
 
 
 # define RED "\033[31m"
@@ -55,12 +57,12 @@ class Chanel
 		// void	invite_user(std::map<int, Client> &server_users, int client_fd_ask ,int user_to_invite);
 		int		Check_UserOnChanel(int fd_user);
 		void	Add_User(int fd_new_user, Client &client);
-		void	kick_user(std::string username, std::string &username_to_kick, std::map<int, \
+		void	kick_user(int username_fd, std::string &username_to_kick, std::map<int, \
 				Client> &server_users);
-		void	set_new_topic(int fd_user, std::string &topic);
-		void	invite_user(std::string username, std::map<int, Client> &server_users);
+		void	set_new_topic(int fd_user, std::string &topic, std::map<int, Client> &server_users);
+		void	invite_user(int fd_user, std::string &username, std::map<int, Client> &server_users);
 		// void	set_password(bool status,  const std::string &pass);
-		// void	set_invite_only(bool status);
+		void	set_invite_only(int fd_user, bool status, std::map<int, Client> &server_users);
 		// void	set_restrictive_topic(bool status);
 		// void	set_max_user(double max);
 		// void	set_op_privileges(std::string &username, int status);
@@ -78,5 +80,7 @@ void		topic_manager(int fd_user, std::string &topic, std::string &chanel_name ,s
 			std::map<std::string , Chanel> &chanels);
 void		Invite_manager(int fd_user, std::string &to_invite, std::string chanel_name, \
 			std::map<int,Client> &server_users, std::map<std::string , Chanel> &chanels);
+void		invite_only_manager(int fd_user, std::string &chanel_name, bool status, std::map<std::string , Chanel> &chanels \
+			,std::map<int, Client> &server_users);
 
 #endif
