@@ -18,6 +18,17 @@ Chanel::Chanel(int admin, std::string chanel_name , std::string topic)
 
 Chanel::~Chanel(){}
 
+void	Chanel::Broadcast_message(std::string msg, std::map<int, Client> &server_users)
+{
+	if (Check_UserOnServer(server_users, admin_fd))
+		send(admin_fd, msg.c_str(), msg.length(), 0);
+	for (std::map<int , Client >::iterator it = users.begin(); it != users.end(); it ++)
+	{
+		if (Check_UserOnServer(server_users, it->first))
+			send(it->first, msg.c_str(), msg.length(), 0);
+	}
+}
+
 std::string	convert_fd_to_name(int fd, std::map<int, Client> &server_users)
 {
 	std::map<int, Client>::iterator it;
@@ -70,30 +81,34 @@ void	join_user(std::string &chanel_name, std::map<std::string , Chanel> &chanels
 	{
 		if (Check_Existng_Chanel(chanel_name, chanels))
 		{
-			std::cout << GREEN << "\nEXIST CHANEL" << RESET << std::endl;
 			if (!chanels.find(chanel_name)->second.Check_UserOnChanel(fd_new_user))
 			{
-				std::string msg = std::string(GREEN"You have been join to Chanel (") + chanel_name.c_str() + ")"RESET + "\n";
+				std::string msg = std::string(GREEN"You have been join to Chanel (") + chanel_name.c_str() + ")\n" RESET;
 				send(fd_new_user, msg.c_str(), msg.length(), 0);
 				chanels.find(chanel_name)->second.Add_User(fd_new_user, server_users.find(fd_new_user)->second);
 			}
 			else
 			{
-				std::string msg(RED"\nYOU already on Chanel\n"RESET);
+				std::string msg(RED "YOU already on Chanel\n" RESET);
 				send(fd_new_user, msg.c_str(), msg.length(), 0);
 			}
 		}
 		else
 		{
-			std::cout << GREEN << "\nCREATE A CHANEL" << RESET << std::endl;
-			std::string msg = std::string(GREEN"You just Create a new Chanel (") + chanel_name.c_str() + ") and now you're the admin"RESET + "\n";
+			std::string msg = std::string(GREEN"You just Create a new Chanel (") + chanel_name.c_str() + ") and now you're the admin" RESET + "\n";
 			send(fd_new_user, msg.c_str(), msg.length(), 0);
 			Chanel new_chanel(fd_new_user, chanel_name, std::string("topic name"));
 			chanels.insert(std::pair<std::string, Chanel>(chanel_name, new_chanel));
+			chanels.find(chanel_name)->second.set_admin(fd_new_user);
 		}
 	}
 	else
 		std::cout << RED << "Client not exist" << RESET << std::endl;
+}
+
+void	Chanel::set_admin(int new_admin)
+{
+	admin_fd = new_admin;
 }
 
 void	Chanel::Add_User(int fd_new_user, Client &client)
@@ -103,37 +118,71 @@ void	Chanel::Add_User(int fd_new_user, Client &client)
 
 void	Chanel::kick_user(int username_fd, std::string &username_to_kick, std::map<int, Client> &server_users)
 {
+	std::string msg;
+
 	if (username_to_kick == convert_fd_to_name(admin_fd, server_users))
-		return ((void)(std::cout << RED << "You cannot KICK admin for chanel" << RESET << std::endl));
+	{
+		msg = RED "Cannot kick admin of Chanel\n" RESET;
+		return ((void)(send(username_fd, msg.c_str(), msg.length(), 0)));
+	}
+	
 	if (username_fd != admin_fd)
 	{
 		if (this->users.find(username_fd) != this->users.end())
 		{
-			std::map<std::string , int>::iterator check = permision_info.op_privileges.find(convert_fd_to_name(username_fd, server_users));
+			std::map<std::string , int>::iterator check = permision_info.op_privileges.find(convert_fd_to_name\
+															(username_fd, server_users));
 			if (check == permision_info.op_privileges.end() || \
 			(check != permision_info.op_privileges.end() && check->second != 1))
-				return ((void)(std::cout << RED << "PERMISSION DENIED" << RESET << std::endl));
+			{
+				msg = RED  "PERMISSION DENIED\n"  RESET;
+				return ((void)(send(username_fd, msg.c_str(), msg.length(), 0)));
+			}
 		}
 		else
-			return ((void)(std::cout << RED << "USER NOT ON CHANEL" << RESET << std::endl));
+		{
+			msg = RED "USER NOT ON CHANEL\n" RESET;
+			return ((void)(send(username_fd, msg.c_str(), msg.length(), 0)));
+		}
 	}
 	if (users.find(convert_name_to_fd(username_to_kick, server_users)) != users.end())
+	{
 		users.erase(convert_name_to_fd(username_to_kick, server_users));
+		msg = RED "You have been KICKED from " + chanel_global_name + " Chanel by user " + \
+		convert_fd_to_name(username_fd, server_users) + "\n" RESET;
+		send(convert_name_to_fd(username_to_kick, server_users), msg.c_str(), msg.length(), 0);
+	}
 	else
-		std::cout << RED << "ERROR : User want to kick (" << username_to_kick << ") Not found on chanel" << RESET << std::endl;
+	{
+		msg = RED "ERROR : User want to kick (" + username_to_kick + ") Not found on Chanel\n" RESET ;
+		return ((void)(send(username_fd, msg.c_str(), msg.length(), 0)));
+	}
 }
 
 void	Kick_manager(int fd_user_cmd, std::string &user_to_kick, std::string &chanel_name, \
 		std::map<std::string, Chanel> &chanels, std::map<int, Client> &server_users)
 {
 	if (Check_Existng_Chanel(chanel_name, chanels))
-		chanels.find(chanel_name)->second.kick_user(fd_user_cmd, user_to_kick, server_users);
+	{
+		if (chanels.find(chanel_name)->second.Check_UserOnChanel(fd_user_cmd))
+			chanels.find(chanel_name)->second.kick_user(fd_user_cmd, user_to_kick, server_users);
+		else
+		{
+			std::string msg = RED  "PERMISSION DENIED : You are not on chanel \n"  RESET;
+			return ((void)(send(fd_user_cmd, msg.c_str(), msg.length(), 0)));
+		}
+	}
 	else
-		std::cout << RED << "Chanel not found" << RESET << std::endl;
+	{
+		std::string msg = RED  "Chanel not found\n" RESET;
+		 send(fd_user_cmd, msg.c_str(), msg.length(), 0);
+	}
 }
 
 void	Chanel::set_new_topic(int fd_user, std::string &topic, std::map<int, Client> &server_users)
 {
+	std::string msg;
+
 	if (fd_user != admin_fd)
 	{
 		if (Check_UserOnChanel(fd_user))
@@ -143,13 +192,22 @@ void	Chanel::set_new_topic(int fd_user, std::string &topic, std::map<int, Client
 				std::map<std::string , int>::iterator check = permision_info.op_privileges.find(convert_fd_to_name(fd_user, server_users));
 				if (check == permision_info.op_privileges.end() || \
 				(check != permision_info.op_privileges.end() && check->second != 1))
-					return ((void)(std::cout << RED << "PERMISSION DENIED" << RESET << std::endl));
+				{
+					msg = RED  "PERMISSION DENIED\n"  RESET;
+					return ((void)(send(fd_user, msg.c_str(), msg.length(), 0)));
+				}
 			}
 		}
 		else
-			return ((void)(std::cout << RED << "User not on Channel" << RESET << std::endl));
+		{
+			msg = RED  "You're not on Channel\n"  RESET;
+			return ((void)(send(fd_user, msg.c_str(), msg.length(), 0)));
+		}
 	}
 	this->topic = topic;
+	msg = GREEN "New Topic set to " + this->topic + " by " + \
+	convert_fd_to_name(fd_user, server_users) + "\n" RESET;
+	Broadcast_message(msg, server_users);
 }
 
 void	topic_manager(int fd_user, std::string &topic, std::string &chanel_name ,std::map<int, Client> &server_users, \
@@ -158,44 +216,71 @@ void	topic_manager(int fd_user, std::string &topic, std::string &chanel_name ,st
 	if (Check_Existng_Chanel(chanel_name, chanels))
 		chanels.find(chanel_name)->second.set_new_topic(fd_user, topic, server_users);
 	else
-		return ((void)(std::cout << RED << "Chanel not found" << RESET << std::endl));
+	{
+		std::string msg = RED  "Chanel not Found\n"  RESET;
+		return ((void)(send(fd_user, msg.c_str(), msg.length(), 0)));
+	}
 }
 
 void	Invite_manager(int fd_user, std::string &to_invite, std::string chanel_name, std::map<int, \
 		Client> &server_users, std::map<std::string , Chanel> &chanels)
 {
+	std::string msg;
+
 	if (Check_UserOnServer(server_users, fd_user) && Check_UserOnServer(server_users, \
 	convert_name_to_fd(to_invite, server_users)))
 	{
 		if (Check_Existng_Chanel(chanel_name, chanels))
 			chanels.find(chanel_name)->second.invite_user(fd_user,to_invite, server_users);
 		else
-			return ((void)(std::cout << RED << "Chanel not found " << RESET << std::endl));
+		{
+			msg = RED "Chanel not found \n"  RESET;
+			return ((void)(send(fd_user, msg.c_str(), msg.length(), 0)));
+		}
 	}
 	else
-		return ((void)(std::cout << RED << "User want to invite not exist on Server" << RESET << std::endl));
+	{
+		msg = RED "User want to invite not exist on Server\n"  RESET ;
+		return ((void)(send(fd_user, msg.c_str(), msg.length(), 0)));
+	}
 }
 
 void	Chanel::invite_user(int fd_user, std::string &to_invite, std::map<int, Client> &server_users)
 {
+	std::string msg;
+
 	if (Check_UserOnChanel(fd_user) || fd_user == admin_fd)
 	{
 		int fd_to_invite = convert_name_to_fd(to_invite, server_users);
 		if (Check_UserOnServer(server_users, fd_to_invite) && !Check_UserOnChanel(fd_to_invite))
 		{
-			std::string msg = (GREEN"You invited to chanel ") + this->chanel_global_name + " to join (JOIN " \
-			+ chanel_global_name + ")" + RESET + "\n";
-			send(fd_to_invite, msg.c_str(), msg.length(), 0);
 			if (std::find(list_user_invited.begin(), list_user_invited.end(), to_invite) == list_user_invited.end())
+			{
+				std::string msg = (GREEN "You invited to chanel ") + this->chanel_global_name + " TO join (JOIN " \
+				+ chanel_global_name + ")" + RESET + "\n";
+				send(fd_to_invite, msg.c_str(), msg.length(), 0);
 				list_user_invited.push_back(to_invite);
+			}
 			else
-				return ((void)(std::cout << RED << "User " << to_invite << " alredy on list of invitation" << RESET << std::endl));
+			{
+				std::vector<std::string>::iterator it = std::find(list_user_invited.begin(), list_user_invited.end(), to_invite);
+				if ( it == list_user_invited.end())
+					list_user_invited.push_back(to_invite);
+				msg = RED "User " + to_invite  + " on list of Invitation\n" RESET;
+				send(fd_user, msg.c_str(), msg.length(), 0);
+			}
 		}
 		else
-			return ((void)(std::cout << RED << "User Already found on chanel" << RESET << std::endl));
+		{
+			msg = RED  "User Already found on Chanel\n" RESET;
+			send(fd_user, msg.c_str(), msg.length(), 0);
+		}
 	}
 	else
-		std::cout << RED << "You are not on chanel" << RESET << std::endl;
+	{
+		msg = RED  "You are not on Chanel\n" RESET;
+		send(fd_user, msg.c_str(), msg.length(), 0);
+	}
 }
 
 // void	chanel::set_password(std::string &username, bool status ,const std::string &pass)
@@ -219,6 +304,8 @@ void	Chanel::invite_user(int fd_user, std::string &to_invite, std::map<int, Clie
 
 void	Chanel::set_invite_only(int fd_user, bool status, std::map<int, Client> &server_users)
 {
+	std::string msg;
+
 	if (fd_user != admin_fd)
 	{
 		if (users.find(fd_user) != users.end())
@@ -227,21 +314,37 @@ void	Chanel::set_invite_only(int fd_user, bool status, std::map<int, Client> &se
 			convert_fd_to_name(fd_user, server_users));
 			if (check == permision_info.op_privileges.end() || \
 			(check != permision_info.op_privileges.end() && check->second != 1))
-				return ((void)(std::cout << RED << "PERMISSION DENIED" << RESET << std::endl));
+			{
+				msg = RED "PERMISSION DENIED\n"  RESET;
+				return ((void)(send(fd_user, msg.c_str(), msg.length(), 0)));
+			}
 		}
 		else
-			return ((void)(std::cout << RED << "USER NOT ON CHANEL" << RESET << std::endl));
+		{
+			msg = RED  "USER NOT ON CHANEL\n" RESET;
+			return ((void)(send(fd_user, msg.c_str(), msg.length(), 0)));
+		}
 	}
+	if (status)
+		msg = GREEN "Chanel set on invite only\n" RESET;
+	else
+		msg = GREEN "Chanel set off invite only\n" RESET;
+	Broadcast_message(msg, server_users);
 	this->permision_info.invite_only = status;
 }
 
 void	invite_only_manager(int fd_user, std::string &chanel_name, bool status, std::map<std::string , Chanel> &chanels \
 		,std::map<int, Client> &server_users)
 {
-	if (Check_UserOnServer(server_users, fd_user) && Check_Existng_Chanel(chanel_name, chanels))
+	std::string msg;
+
+	if (Check_Existng_Chanel(chanel_name, chanels))
 		chanels.find(chanel_name)->second.set_invite_only(fd_user, status, server_users);
 	else
-		return ((void)(std::cout << RED << "Chanel not found" << RESET << std::endl));
+	{
+		msg = RED  "Chanel not Found\n" RESET;
+		return ((void)(send(fd_user, msg.c_str(), msg.length(), 0)));
+	}
 }
 
 // void	chanel::set_restrictive_topic(std::string &username, bool status)

@@ -50,7 +50,7 @@ int	Server::Listen()
 int	Server::Setup_Sever()
 {
 	if (Create_Socket() && Set_ReuseSocket() && Bind_Socket() && Listen())
-		return (std::cout << GREEN << "SUCCESFULLY SETUP SERVER" << RESET << std::endl, 1);
+		return (1);
 	return (0);
 }
 
@@ -74,7 +74,7 @@ void    Server::Handle_Close_Connection(int i)
 	std::cout << BLUE << "ERROR : Connection of Client closed" <<  RESET << std::endl;
 }
 
-void    Server::Handle_Client_Data(int i, std::map<int, Client> &client, std::map<std::string , Chanel> &chanels)
+void    Server::Handle_Client_Data(int i, std::map<int, Client> &client, std::map<std::string, Chanel> &chanels)
 {
 	int fd = Events[i].data.fd;
 	if (Events[i].events & EPOLLIN)
@@ -90,7 +90,7 @@ void    Server::Handle_Client_Data(int i, std::map<int, Client> &client, std::ma
 		else
 		{
 			client[fd].buffer[nb_byte -1] = 0;
-			parss_data(Events[i].data.fd, client, chanels);
+			parss_data(Events[i].data.fd, client, password, chanels);
 			// std::cout << client[fd].buffer ;
 		}
 	}
@@ -98,8 +98,8 @@ void    Server::Handle_Client_Data(int i, std::map<int, Client> &client, std::ma
 
 int	Server::Multiplexing()
 {
-	std::map<int, Client>			client;
-	std::map<std::string , Chanel>	chanels;
+	std::map<int, Client> client;
+	std::map<std::string, Chanel> chanels;
 
 	epoll_fd = epoll_create1(0);
 	if (epoll_fd == -1)
@@ -119,7 +119,9 @@ int	Server::Multiplexing()
 		{
 			if (Events[i].data.fd == Server_Socket)
 			{
-				client[Handle_New_Connection()].auth = false;
+				int nm = Handle_New_Connection();
+				if(nm > 0)
+					client[nm].auth = false;
 			}
 			else
 				Handle_Client_Data(i, client, chanels);

@@ -14,6 +14,7 @@
 #include <vector>
 #include <cerrno>
 #include "client.hpp"
+#include <cstdlib>
 #include "chanel.h"
 
 # define RED "\033[31m"
@@ -24,7 +25,13 @@
 # define CYAN "\033[36m"
 # define RESET "\033[0m"
 # define WHITE "\033[37m"
-# define PASSWORD "soso+"
+#define MAGENTA "\033[1;35m"
+#define BRIGHT_RED "\033[1;91m"
+#define BRIGHT_GREEN "\033[1;92m"
+#define BRIGHT_YELLOW "\033[1;93m"
+#define BRIGHT_BLUE "\033[1;94m"
+#define BRIGHT_MAGENTA "\033[1;95m"
+#define BRIGHT_CYAN "\033[1;96m"
 
 class Server {
 private :
@@ -49,9 +56,9 @@ public :
     int		Listen();
     int     Setup_Sever();
     int     Multiplexing();
-    int   Handle_New_Connection();
-    void    Handle_Client_Data(int i,std::map<int, Client> &client, \
-            std::map<std::string , Chanel>	&chanels);
+    int     Handle_New_Connection();
+    void    Handle_Client_Data(int i, std::map<int, Client> &client, \
+            std::map<std::string, Chanel> &chanels);
     void    Handle_Close_Connection(int i);
     ~Server();
 };

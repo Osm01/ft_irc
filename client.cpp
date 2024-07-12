@@ -1,13 +1,48 @@
 #include "server.h"
 #include "client.hpp"
 
+bool isValidChar(char c) {
+    return std::isalnum(static_cast<unsigned char>(c)) || 
+           c == '-' || c == '[' || c == ']' || 
+           c == '\\' || c == '_' || c == '^' || 
+           c == '{' || c == '}';
+}
+
+// Validate the nickname
+bool isValiduser(const std::string& user) {
+    if (user.empty() || user.size() > 9) {
+        return false;
+    }
+
+    // First character must be a letter or special character
+    if (!std::isalpha(static_cast<unsigned char>(user[0])) &&
+        user[0] != '-' && user[0] != '[' && user[0] != ']' && 
+        user[0] != '\\' && user[0] != '_' && user[0] != '^' && 
+        user[0] != '{' && user[0] != '}') {
+        return false;
+    }
+
+    // All characters must be valid
+    for (std::string::const_iterator it = user.begin(); it != user.end(); ++it) {
+        if (!isValidChar(*it)) {
+            return false;
+        }
+    }
+
+    return true;
+}
+
 bool double_user(int fd, std::map<int, Client> &clients) {
 
         std::string username = clients[fd].buffer;
+        if(!isValiduser(username))
+        {
+        send(fd, "INVALIDE USERNAME\nENTER VALID USERNAME:", 40, 0);
+            return false;
+        }
         for (std::map<int, Client>::iterator jt = clients.begin(); jt != clients.end(); ++jt) {
             if (username == jt->second.username) {
                 send(fd, "EXIST USER" , 11 , 0);
-                std::cerr << "found same user\n";
                 return false; 
             }
         }
@@ -93,8 +128,6 @@ void send_message(int fd, std::map<int , Client> client)
         send(fd_user, message.c_str(), message.length(), 0);
 }
 
-
-
 std::vector<std::string> splitString(const std::string& str) {
     std::vector<std::string> result;
     if(str.empty())
@@ -113,20 +146,35 @@ bool check_mode(std::map<int, Client> client, int fd)
 {
     std::string option[10] = {"+i" , "-i", "+l", "-l",\
      "+k", "-k", "+o", "-o", "+t", "-t"};
-    if(client[fd].arg.size() > 4)
+    int size = client[fd].arg.size();
+    if(size >= 2 && (client[fd].arg[1] == "+o" || client[fd].arg[1] == "-o" \
+    || client[fd].arg[1] == "+l" || client[fd].arg[1] == "+k" \
+    || client[fd].arg[1] == "+t" || client[fd].arg[1] == "-t"))
+    {
+    if(size > 4 || size < 4)
+       return(send(fd, "error in setings of command\n", 29, 0), false);
+    if(client[fd].arg[1] == "+l")
+    {
+        std::string str = client[fd].arg[3];
+        for (std::string::const_iterator it = str.begin(); it != str.end(); ++it) {
+        if (!isdigit(*it)) {
+            return(send(fd, "SHOULD ENTER DIGITS\n", 21,0) , false); // If any character is not a digit, return false
+        }
+        }
+    long int num = std::atol(str.c_str());
+    if(num > INT32_MAX)
+        return(send(fd, "long number\n", 13, 0), false);
+    }
+    return(true);
+    }
+    if(client[fd].arg.size() > 3)
         return(send(fd, "TO MANY ARGUMENT\n", 18, 0), false);
-    if(client[fd].arg.size() < 4)
+    if(client[fd].arg.size() < 3)
         return(send(fd, "NOT ENOUGH ARGUMENT\n", 21, 0) , false);
     for(int i = 0; i < 11; i++)
     {
         if(option[i] == client[fd].arg[1])
-        {
-            // int user = fd_ofuser(client[fd].arg[2], client);
-            // if(user < 0)
-            //     return(send(fd, "USER NOT FOUND\n", 16, 0), false);
-            // else
                 return(true);
-        }
     }
     return (send(fd, "OPTION NOT FOUND\n",18, 0) ,false);
 }
@@ -164,30 +212,60 @@ bool check_cmd(int fd, std::map<int , Client> &client)
     return true;
 }
 
-void parss_data(int fd, std::map<int,Client> &client, std::map<std::string , Chanel> &chanels)
+std::string getTimestamp() {
+    char timestamp[9]; // HH:MM:SS + '\0'
+    std::time_t now = std::time(0);
+    std::strftime(timestamp, sizeof(timestamp), "%H:%M:%S", std::localtime(&now));
+    return timestamp;
+}
+
+void send_command_table(int client_fd) {
+    std::ostringstream oss;
+
+    // Header
+    oss << "COMMAND        | DESCRIPTION                            | USAGE\n";
+    oss << "---------------|----------------------------------------|---------------------------\n";
+
+    // Command Table Rows
+    oss << BRIGHT_RED << "JOIN           " << RESET << "| Join a channel                        " << RESET << " | join #channel\n";
+    oss << BRIGHT_RED << "KICK           " << RESET << "| Eject a client from the channel       " << RESET << " | kick username #channel\n";
+    oss << BRIGHT_GREEN << "INVITE         " << RESET << "| Invite a client to a channel          " << RESET << " | invite username #channel\n";
+    oss << BRIGHT_YELLOW << "TOPIC          " << RESET << "| Change or view the channel topic      " << RESET << " | topic #channel [new topic]\n";
+    oss << BRIGHT_BLUE << "MODE           " << RESET << "| Change the channel’s mode             " << RESET << " | mode [mode] #channel\n";
+    oss << BRIGHT_MAGENTA << "MODE +i        " << RESET << "| Set Invite-only channel               " << RESET << " | mode +i #channel\n";
+    oss << BRIGHT_CYAN << "MODE -i        " << RESET << "| Remove Invite-only channel            " << RESET << " | mode -i #channel\n";
+    oss << WHITE << "MODE +t        " << RESET << "| Restrict TOPIC command                " << RESET << " | mode +t #user #channel\n";
+    oss << WHITE << "MODE -t        " << RESET << "| Allow TOPIC command                   " << RESET << " | mode -t #user #channel\n";
+    oss << RED << "MODE +k        " << RESET << "| Set channel key (password)            " << RESET << " | mode +k #channel <password>\n";
+    oss << RED << "MODE -k        " << RESET << "| Remove channel key (password)         " << RESET << " | mode -k #channel\n";
+    oss << GREEN << "MODE +o        " << RESET << "| Give channel operator privilege       " << RESET << " | mode +o <username> #channel\n";
+    oss << GREEN << "MODE -o        " << RESET << "| Take channel operator privilege       " << RESET << " | mode -o <username> #channel\n";
+    oss << BRIGHT_BLUE << "MODE +l        " << RESET << "| Set user limit to channel             " << RESET << " | mode +l #channel <number of user>\n";
+    oss << BRIGHT_BLUE << "MODE -l        " << RESET << "| Remove user limit to channel          " << RESET << " | mode -l #channel\n";
+    oss << BRIGHT_GREEN << "SEND           " << RESET << "| Send message to other client          " << RESET << " | username : your message\n";
+    oss << getTimestamp() << ":";
+    std::string message = oss.str();
+    send(client_fd, message.c_str(), message.size(), 0);
+}
+bool isValidnick(int fd, std::string nickname)
 {
+    if(!isValiduser(nickname))
+    {
+        send(fd, "INVALIDE NICKNAME\n", 19,0);
+        return(false);
+    }
+    return true;
+}
+
+void parss_data(int fd, std::map<int,Client> &client, std::string password, std::map<std::string, Chanel> &chanels)
+{
+    (void) chanels;
     char *buffer = client[fd].buffer;
     std::string buff = client[fd].buffer;
-    std::cerr << "buff " << buff << std::endl;
-    const char* messages = 
-        "<<<<<<<<<<<<<<COMMAND>>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n"
-        RED"* JOIN   - join a channel\n"
-        RED"* KICK   - Eject a client from the channel\n" // Red
-        "\033[1;32m∗ INVITE - Invite a client to a channel\n" // Green
-        "\033[1;33m∗ TOPIC  - Change or view the channel topic\n" // Yellow
-        "\033[1;34m∗ MODE   - Change the channel’s mode:\n" // Blue
-        "\033[1;35m· i: Set/remove Invite-only channel\n" // Magenta
-        "\033[1;36m· t: Set/remove the restrictions of the TOPIC command to channel operators\n" // Cyan
-        "\033[1;37m· k: Set/remove the channel key (password)\n" // White
-        "\033[1;31m· o: Give/take channel operator privilege\n" // Red
-        "\033[1;32m· l: Set/remove the user limit to channel\n"
-        BLUE "SEND    : send message to other client , username:'your message'\n"
-        RESET; // Green
-    
-    std::cerr << "fd " << fd << client[fd].username;
-    if(!client[fd].auth && strcmp(buffer, PASSWORD))
+
+    if(!client[fd].auth && buff != password)
         send(fd, "\033[31m INCORRECT PASSWORD\n", 26, 0);
-    else if(!client[fd].auth && !strcmp(buffer, PASSWORD))
+    else if(!client[fd].auth && buff == password)
     {
         client[fd].auth = true;
         send(fd, "\033[1;32mWELCOM TO IRC SERVER\nENTER YOUR USERNAME:", 49, 0);
@@ -197,12 +275,12 @@ void parss_data(int fd, std::map<int,Client> &client, std::map<std::string , Cha
         client[fd].username = client[fd].buffer;
         send(fd, "\033[1;32mENTER YOUR NIKENAME:", 28 , 0);
     }
-    else if(client[fd].auth && client[fd].nickname.empty() && *buffer != 0 && !client[fd].username.empty())
+    else if(client[fd].auth && client[fd].nickname.empty() && *buffer != 0 && !client[fd].username.empty() && isValidnick(fd, buff))
     {
         client[fd].nickname = client[fd].buffer;
-        send(fd, messages, 634, 0);
+        send_command_table(fd);
     }
-    else 
+    else if(!client[fd].username.empty() && !client[fd].nickname.empty())
     {
         std::string cmd;
         client[fd].arg = splitString(buff);
@@ -217,31 +295,17 @@ void parss_data(int fd, std::map<int,Client> &client, std::map<std::string , Cha
         bool check = check_cmd(fd, client);
         if (cmd == "SEND" && check)
         {
+            // problem ui on send on client ui 
             send_message(fd, client);
         }
         else if(cmd == "JOIN" && check)
         {
-            std::cout << RED << "Before" << RESET << std::endl;
-            for (std::map<std::string , Chanel>::iterator it = chanels.begin() ; it != chanels.end() ;it ++)
-            {
-                std::cout << "Chanel name is : " << it->first << std::endl;
-                std::cout << "Admin user is : " << convert_fd_to_name(it->second.admin_fd, client) << std::endl;
-                for (std::map<int , Client >::iterator i = it->second.users.begin(); i != it->second.users.end(); i ++)
-                    std::cout << i->second.username << std::endl;
-            }
-           join_user(client[fd].arg[1], chanels, fd, client);
-           std::cout << GREEN << "AFTER" << RESET <<  std::endl;
-           for (std::map<std::string , Chanel>::iterator it = chanels.begin() ; it != chanels.end() ;it ++)
-           {
-               std::cout << "Chanel name is : " << it->first << std::endl;
-               std::cout << "Admin user is : " << convert_fd_to_name(it->second.admin_fd, client) << std::endl;
-               for (std::map<int , Client >::iterator i = it->second.users.begin(); i != it->second.users.end(); i ++)
-                   std::cout << i->second.username << std::endl;
-           }
+            join_user(client[fd].arg[1], chanels, fd, client);
         }
         else if(cmd == "KICK" && check)
         {
-            Kick_manager(fd, client[fd].arg[1], client[fd].arg[2], chanels, client);
+            Kick_manager(fd, client[fd].arg[1], client[fd].arg[2], \
+            chanels, client);
         }
         else if(cmd == "INVITE" && check)
         {
@@ -253,12 +317,17 @@ void parss_data(int fd, std::map<int,Client> &client, std::map<std::string , Cha
         }
         else if(cmd == "MODE" && check)
         {
+            std::cout << "socket " << fd << std::endl;
             if (client[fd].arg[1] == "+i" || client[fd].arg[1] == "-i")
             {
-                bool result = (client[fd].arg[1] == "+i") ? 1 : 0;
-                invite_only_manager(fd, client[fd].arg[1], result, \
-                                    chanels, client);
+                int status = 1;
+                if (client[fd].arg[1] == "-i")
+                    status = 0;
+                invite_only_manager(fd, client[fd].arg[2], status, chanels, client);
             }
         }
+        std::string str= getTimestamp() + " @" + client[fd].username + " :";
+        const char *mes = str.c_str();
+        send(fd, mes, strlen(mes), 0);
     }
 }
