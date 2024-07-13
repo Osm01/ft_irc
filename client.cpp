@@ -317,13 +317,33 @@ void parss_data(int fd, std::map<int,Client> &client, std::string password, std:
         }
         else if(cmd == "MODE" && check)
         {
-            std::cout << "socket " << fd << std::endl;
             if (client[fd].arg[1] == "+i" || client[fd].arg[1] == "-i")
             {
                 int status = 1;
                 if (client[fd].arg[1] == "-i")
                     status = 0;
                 invite_only_manager(fd, client[fd].arg[2], status, chanels, client);
+            }
+            if (client[fd].arg[1] == "+k" || client[fd].arg[1] == "+k")
+            {
+                std::string pass;
+                int status = 1;
+
+                if (client[fd].arg[1] == "-k")
+                {
+                    pass = "";
+                    status = 0;
+                }
+                else
+                    pass = client[fd].arg[3];
+                Password_manager(fd, pass , status, client[fd].arg[2], client, chanels);
+            }
+            if (client[fd].arg[1] == "+o" || client[fd].arg[1] == "-o")
+            {
+                int status = 1;
+                if (client[fd].arg[1] == "-o")
+                    status = 0;
+                priviliges_manager(fd, client[fd].arg[2], status, client[fd].arg[3], chanels, client);
             }
         }
         std::string str= getTimestamp() + " @" + client[fd].username + " :";

@@ -13,7 +13,7 @@ Chanel::Chanel(int admin, std::string chanel_name , std::string topic)
 	// set default value of struct permission
 	this->permision_info.invite_only = false;
 	this->permision_info.restrictive_topic = false;
-	this->permision_info.max_user = 200;
+	this->permision_info.max_user = -1;
 }
 
 Chanel::~Chanel(){}
@@ -205,7 +205,7 @@ void	Chanel::set_new_topic(int fd_user, std::string &topic, std::map<int, Client
 		}
 	}
 	this->topic = topic;
-	msg = GREEN "New Topic set to " + this->topic + " by " + \
+	msg = GREEN "\nNew Topic set to " + this->topic + " by " + \
 	convert_fd_to_name(fd_user, server_users) + "\n" RESET;
 	Broadcast_message(msg, server_users);
 }
@@ -283,23 +283,50 @@ void	Chanel::invite_user(int fd_user, std::string &to_invite, std::map<int, Clie
 	}
 }
 
-// void	chanel::set_password(std::string &username, bool status ,const std::string &pass)
-// {
-// 	if (username != admin.username)
-// 	{
-// 		if (users.find(username) != users.end())
-// 		{
-// 			std::map<std::string , int>::iterator check = password_info.op_privileges.find(username);
-// 			if (check == password_info.op_privileges.end() || \
-// 			(check != password_info.op_privileges.end() && check->second != 1))
-// 				return ((void)std::cout << RED << "PERMISSION DENIED" << RESET << std::endl);
-// 		}
-// 		else
-// 			return ((void)std::cout << RED << "USER NOT ON CHANEL" << RESET << std::endl);
-// 	}
-// 	this->password_info.active = status;
-// 	this->password_info.password = pass;
-// }
+void	Password_manager(int fd_user, std::string &new_pass ,bool status, std::string &chanel_name , \
+		std::map<int, Client> &server_users, std::map<std::string , Chanel> &chanels)
+{
+	std::string msg;
+
+	if (Check_Existng_Chanel(chanel_name ,chanels))
+		chanels.find(chanel_name)->second.set_password(fd_user, new_pass, status, server_users);
+	else
+	{
+		msg = RED "Chanel not Found\n" RESET;
+		send(fd_user, msg.c_str(), msg.length(), 0);
+	}
+}
+
+void	Chanel::set_password(int &fd_user, const std::string &pass, bool status, std::map<int, Client> &server_users)
+{
+	std::string msg;
+
+	if (fd_user != admin_fd)
+	{
+		if (users.find(fd_user) != users.end())
+		{
+			std::map<std::string , int>::iterator check = permision_info.op_privileges.find(convert_fd_to_name(fd_user, server_users));
+			if (check == permision_info.op_privileges.end() || \
+			(check != permision_info.op_privileges.end() && check->second != 1))
+			{
+				msg = RED "PERMISSION DENIED\n" RESET;
+				return ((void)(send(fd_user, msg.c_str(), msg.length(), 0)));
+			}
+		}
+		else
+		{
+			msg = RED "YOU are Not on Chanel\n" RESET;
+			return ((void)(send(fd_user, msg.c_str(), msg.length(), 0)));
+		}
+	}
+	if (status)
+		msg = GREEN "Set ON password of Chanel\n" RESET;
+	else
+		msg = GREEN "Set OFF password of Chanel\n" RESET;
+	Broadcast_message(msg, server_users);
+	this->password_info.active = status;
+	this->password_info.password = pass;
+}
 
 
 void	Chanel::set_invite_only(int fd_user, bool status, std::map<int, Client> &server_users)
@@ -347,6 +374,8 @@ void	invite_only_manager(int fd_user, std::string &chanel_name, bool status, std
 	}
 }
 
+
+
 // void	chanel::set_restrictive_topic(std::string &username, bool status)
 // {
 // 	if (username != admin.username)
@@ -381,22 +410,56 @@ void	invite_only_manager(int fd_user, std::string &chanel_name, bool status, std
 // 	this->permission_info.max_user = max;
 // }
 
-// void	chanel::set_op_privileges(std::string &username, std::string &user_to_rank, int status)
-// {
-// 	if (username != admin.username)
-// 	{
-// 		if (users.find(username) != users.end())
-// 		{
-// 			std::map<std::string , int>::iterator check = password_info.op_privileges.find(username);
-// 			if (check == password_info.op_privileges.end() || \
-// 			(check != password_info.op_privileges.end() && check->second != 1))
-// 				return ((void)std::cout << RED << "PERMISSION DENIED" << RESET << std::endl);
-// 		}
-// 		else
-// 			return ((void)std::cout << RED << "USER NOT ON CHANEL" << RESET << std::endl);
-// 	}
-// 	if (users.find(user_to_rank) != users.end())
-// 		this->permission_info.op_privileges.insert(pair<std::string , int>(user_to_rank, status));
-// 	else
-// 		std::cout << RED << "ERROR : User " << user_to_rank << " Not found on chanel to set privileges" << RESET << std::endl;
-// }
+void	priviliges_manager(int fd_user, std::string &user_to_rank, int status, std::string &chanel_name , \
+						std::map<std::string , Chanel> &chanels , std::map<int, Client> &server_users)
+{
+	std::string msg;
+
+	if (Check_Existng_Chanel(chanel_name, chanels))
+		chanels.find(chanel_name)->second.set_op_privileges(fd_user, user_to_rank, status, server_users);
+	else
+	{
+		msg = RED "Chanel not Found\n" RESET;
+		return ((void)(send(fd_user, msg.c_str(), msg.length(), 0)));
+	}
+}
+
+void	Chanel::set_op_privileges(int fd_user, std::string &user_to_rank, int status,std::map<int, Client> &server_users)
+{
+	std::string msg;
+
+	if (fd_user != admin_fd)
+	{
+		if (users.find(fd_user) != users.end())
+		{
+			std::map<std::string , int>::iterator check = permision_info.op_privileges.find(convert_fd_to_name(fd_user, server_users));
+			if (check == permision_info.op_privileges.end() || \
+			(check != permision_info.op_privileges.end() && check->second != 1))
+			{
+				msg = RED "PERMISSION DENIED\n" RESET;
+				return ((void)(send(fd_user, msg.c_str(), msg.length(), 0)));
+			}
+		}
+		else
+		{
+			msg = RED "You are Not on Chanel\n" RESET;
+			return ((void)(send(fd_user, msg.c_str(), msg.length(), 0)));
+		}
+	}
+	if (convert_fd_to_name(admin_fd, server_users) == user_to_rank)
+	{
+		msg = RED "Admin already have privileges\n" RESET;;
+		return ((void)(send(fd_user, msg.c_str(), msg.length(), 0)));
+	}
+	if (users.find(convert_name_to_fd(user_to_rank, server_users)) != users.end())
+	{
+		this->permision_info.op_privileges[user_to_rank] = status;
+		msg = GREEN "User " + user_to_rank + " Apply ranking " + ((status == 1) ? "UP" : "DOWN") + " on it\n" RESET;
+		return ((void)(send(fd_user, msg.c_str(), msg.length(), 0)));
+	}
+	else
+	{
+		msg = RED "User want to set rank " + std::string(((status == 1) ? "UP" : "DOWN")) +  " on it not found\n" RESET;;
+		return ((void)(send(fd_user, msg.c_str(), msg.length(), 0)));
+	}
+}
