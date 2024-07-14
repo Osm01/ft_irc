@@ -64,7 +64,7 @@ class Chanel
 		void	set_password(int &fd_user, const std::string &pass, bool status, std::map<int, Client> &server_users);
 		void	set_invite_only(int fd_user, bool status, std::map<int, Client> &server_users);
 		// void	set_restrictive_topic(bool status);
-		// void	set_max_user(double max);
+		void	set_max_user(int fd_user, double max, std::map<int, Client> &server_users);
 		void	set_op_privileges(int fd_user, std::string &user_to_rank, int status, std::map<int, Client> &server_users);
 		void	Broadcast_message(std::string msg, std::map<int, Client> &server_users);
 		void	set_admin(int new_admin);
@@ -88,5 +88,6 @@ void		Password_manager(int fd_user, std::string &new_pass ,bool status, std::str
 			std::map<int, Client> &server_users, std::map<std::string , Chanel> &chanels);
 void		priviliges_manager(int fd_user, std::string &user_to_rank, int status, std::string &chanel_name , \
 			std::map<std::string , Chanel> &chanels , std::map<int, Client> &server_users);
-
+void		Max_user_manager(int fd_user, double max, std::string &chanel_name , \
+			std::map<std::string , Chanel> &chanels , std::map<int, Client> &server_users);
 #endif

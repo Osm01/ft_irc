@@ -345,6 +345,16 @@ void parss_data(int fd, std::map<int,Client> &client, std::string password, std:
                     status = 0;
                 priviliges_manager(fd, client[fd].arg[2], status, client[fd].arg[3], chanels, client);
             }
+            if (client[fd].arg[1] == "+l" || client[fd].arg[1] == "-l")
+            {
+                int max = -1;
+                if (client[fd].arg[1] == "+l")
+                {
+                    std::stringstream ss(client[fd].arg[3]);
+                    ss >> max;
+                }
+                Max_user_manager(fd, max, client[fd].arg[2], chanels, client);
+            }
         }
         std::string str= getTimestamp() + " @" + client[fd].username + " :";
         const char *mes = str.c_str();
