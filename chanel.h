@@ -13,6 +13,7 @@
 #include <map>
 #include <cerrno>
 #include <algorithm>
+#include <sstream> 
 
 
 # define RED "\033[31m"
@@ -56,7 +57,7 @@ class Chanel
 		~Chanel();
 		// void	invite_user(std::map<int, Client> &server_users, int client_fd_ask ,int user_to_invite);
 		int		Check_UserOnChanel(int fd_user);
-		void	Add_User(int fd_new_user, Client &client);
+		void	Add_User(int fd_new_user, Client &client, std::string &pass ,std::map<int, Client> &server_users);
 		void	kick_user(int username_fd, std::string &username_to_kick, std::map<int, \
 				Client> &server_users);
 		void	set_new_topic(int fd_user, std::string &topic, std::map<int, Client> &server_users);
@@ -73,7 +74,7 @@ class Chanel
 int			Check_UserOnServer(std::map<int, Client> &server_users , int fd_user);
 int			Check_Existng_Chanel(std::string &name , std::map<std::string, Chanel> &chanels);
 void		join_user(std::string &chanel_name, std::map<std::string , Chanel> &chanels, \
-			int fd_new_user, std::map<int, Client> &server_users);
+			int fd_new_user, std::string &pass, std::map<int, Client> &server_users);
 void		Kick_manager(int fd_user_cmd, std::string &user_to_kick, std::string &chanel_name, \
 			std::map<std::string, Chanel> &chanels, std::map<int, Client> &server_users);
 std::string	convert_fd_to_name(int fd, std::map<int, Client> &server_users);

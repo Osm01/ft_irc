@@ -119,6 +119,7 @@ int fd_ofuser(std::string username, std::map<int, Client> client) {
 void send_message(int fd, std::map<int , Client> client)
 {
    int fd_user =  fd_ofuser(client[fd].arg[1], client);
+
    std::string message = get_message(client[fd].buffer);
    if(fd_user < 0)
         send(fd, "USER NOT FOUND\n", 16, 0);
@@ -300,7 +301,10 @@ void parss_data(int fd, std::map<int,Client> &client, std::string password, std:
         }
         else if(cmd == "JOIN" && check)
         {
-            join_user(client[fd].arg[1], chanels, fd, client);
+            std::string pass = "";
+            if (client[fd].arg.size() > 2)
+                pass = client[fd].arg[2];
+            join_user(client[fd].arg[1], chanels, fd, pass, client);
         }
         else if(cmd == "KICK" && check)
         {
@@ -324,7 +328,7 @@ void parss_data(int fd, std::map<int,Client> &client, std::string password, std:
                     status = 0;
                 invite_only_manager(fd, client[fd].arg[2], status, chanels, client);
             }
-            if (client[fd].arg[1] == "+k" || client[fd].arg[1] == "+k")
+            if (client[fd].arg[1] == "+k" || client[fd].arg[1] == "-k")
             {
                 std::string pass;
                 int status = 1;

@@ -14,6 +14,8 @@ Chanel::Chanel(int admin, std::string chanel_name , std::string topic)
 	this->permision_info.invite_only = false;
 	this->permision_info.restrictive_topic = false;
 	this->permision_info.max_user = -1;
+	// max user to -1
+	this->permision_info.max_user = -1;
 }
 
 Chanel::~Chanel(){}
@@ -75,18 +77,15 @@ int	Check_UserOnServer(std::map<int, Client> &server_users , int fd_user)
 }
 
 void	join_user(std::string &chanel_name, std::map<std::string , Chanel> &chanels, int fd_new_user, \
-		std::map<int, Client> &server_users)
+		std::string &pass,std::map<int, Client> &server_users)
 {
 	if (Check_UserOnServer(server_users, fd_new_user))
 	{
 		if (Check_Existng_Chanel(chanel_name, chanels))
 		{
 			if (!chanels.find(chanel_name)->second.Check_UserOnChanel(fd_new_user))
-			{
-				std::string msg = std::string(GREEN"You have been join to Chanel (") + chanel_name.c_str() + ")\n" RESET;
-				send(fd_new_user, msg.c_str(), msg.length(), 0);
-				chanels.find(chanel_name)->second.Add_User(fd_new_user, server_users.find(fd_new_user)->second);
-			}
+				chanels.find(chanel_name)->second.Add_User(fd_new_user, server_users.find(fd_new_user)->second,\
+				pass, server_users);
 			else
 			{
 				std::string msg(RED "YOU already on Chanel\n" RESET);
@@ -95,7 +94,7 @@ void	join_user(std::string &chanel_name, std::map<std::string , Chanel> &chanels
 		}
 		else
 		{
-			std::string msg = std::string(GREEN"You just Create a new Chanel (") + chanel_name.c_str() + ") and now you're the admin" RESET + "\n";
+			std::string msg = std::string(GREEN"You just Create a new Chanel (") + chanel_name.c_str() + ") and now you're the admin\n" RESET;
 			send(fd_new_user, msg.c_str(), msg.length(), 0);
 			Chanel new_chanel(fd_new_user, chanel_name, std::string("topic name"));
 			chanels.insert(std::pair<std::string, Chanel>(chanel_name, new_chanel));
@@ -111,9 +110,38 @@ void	Chanel::set_admin(int new_admin)
 	admin_fd = new_admin;
 }
 
-void	Chanel::Add_User(int fd_new_user, Client &client)
+void	Chanel::Add_User(int fd_new_user, Client &client, std::string &pass, \
+		std::map<int, Client> &server_users)
 {
+	if (this->permision_info.invite_only)
+	{
+		std::vector<std::string>::iterator check = std::find(list_user_invited.begin(), \
+		list_user_invited.end(), convert_fd_to_name(fd_new_user, server_users));
+		if (check == list_user_invited.end())
+		{
+			std::string msg = RED "To Join Chanel You need invitation\n" RESET;
+			return((void)(send(fd_new_user, msg.c_str(), msg.length(), 0)));
+		}
+	}
+	if (this->password_info.active)
+	{
+		std::string msg = "Password to join chanel is requiered now : ";
+		send(fd_new_user, msg.c_str(), msg.length(), 0);
+		if (pass != password_info.password)
+		{
+			std::string msg = RED "Wrong Password" RESET;
+			return((void)(send(fd_new_user, msg.c_str(), msg.length(), 0)));
+		}
+	}
+	if (this->permision_info.max_user > 0 && this->permision_info.max_user > users.size())
+	{
+		std::string msg = RED "Chanel reach max number of users\n" RESET;
+		return((void)(send(fd_new_user, msg.c_str(), msg.length(), 0)));
+	}
 	users.insert(std::pair<int, Client>(fd_new_user, client));
+	std::string msg = std::string(GREEN"You have been join to Chanel (") + \
+	chanel_global_name + ")\n" RESET;
+	send(fd_new_user, msg.c_str(), msg.length(), 0);
 }
 
 void	Chanel::kick_user(int username_fd, std::string &username_to_kick, std::map<int, Client> &server_users)
@@ -266,19 +294,19 @@ void	Chanel::invite_user(int fd_user, std::string &to_invite, std::map<int, Clie
 				std::vector<std::string>::iterator it = std::find(list_user_invited.begin(), list_user_invited.end(), to_invite);
 				if ( it == list_user_invited.end())
 					list_user_invited.push_back(to_invite);
-				msg = RED "User " + to_invite  + " on list of Invitation\n" RESET;
+				msg = RED "User " + to_invite  + " on queue of Invitation list\n" RESET;
 				send(fd_user, msg.c_str(), msg.length(), 0);
 			}
 		}
 		else
 		{
-			msg = RED  "User Already found on Chanel\n" RESET;
+			msg = RED  "User Already on Chanel\n" RESET;
 			send(fd_user, msg.c_str(), msg.length(), 0);
 		}
 	}
 	else
 	{
-		msg = RED  "You are not on Chanel\n" RESET;
+		msg = RED  "You are not on Chanel to sent invitation\n" RESET;
 		send(fd_user, msg.c_str(), msg.length(), 0);
 	}
 }
@@ -418,7 +446,11 @@ void	Chanel::set_max_user(int fd_user, double max, std::map<int, Client> &server
 	if (max == -1)
 		msg = GREEN "Number of Client on Chanel is set to unlimited\n" RESET;
 	else
-		msg = GREEN "Number of Client on Chanel is set to " + std::to_string(max) + "\n" RESET;
+	{
+		std::stringstream ss;
+		ss << max;
+		msg = GREEN "Number of Client on Chanel is set to " + ss.str() + "\n" RESET;
+	}
 	Broadcast_message(msg, server_users);
 	this->permision_info.max_user = max;
 }
