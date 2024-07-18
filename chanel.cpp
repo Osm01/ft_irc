@@ -1,4 +1,4 @@
-#include "chanel.h"
+#include "channel.h"
 #include "client.hpp"
 #include "string.h"
 
@@ -125,15 +125,17 @@ void	Chanel::Add_User(int fd_new_user, Client &client, std::string &pass, \
 	}
 	if (this->password_info.active)
 	{
-		std::string msg = "Password to join chanel is requiered now : ";
-		send(fd_new_user, msg.c_str(), msg.length(), 0);
+		std::string msg;
 		if (pass != password_info.password)
 		{
-			std::string msg = RED "Wrong Password" RESET;
+			if (pass == "")
+				msg = RED "Password to join chanel is requiered\n" RESET;
+			else
+				std::string msg = RED "Wrong Password\n" RESET;
 			return((void)(send(fd_new_user, msg.c_str(), msg.length(), 0)));
 		}
 	}
-	if (this->permision_info.max_user > 0 && this->permision_info.max_user > users.size())
+	if (this->permision_info.max_user >= 0 && this->permision_info.max_user <= users.size())
 	{
 		std::string msg = RED "Chanel reach max number of users\n" RESET;
 		return((void)(send(fd_new_user, msg.c_str(), msg.length(), 0)));
@@ -402,24 +404,50 @@ void	invite_only_manager(int fd_user, std::string &chanel_name, bool status, std
 	}
 }
 
+void	Chanel::set_restrictive_topic(int fd_user, bool status, std::map<int, Client> &server_users)
+{
+	std::string msg;
 
+	if (fd_user != admin_fd)
+	{
+		if (users.find(fd_user) != users.end())
+		{
+			std::map<std::string , int>::iterator check = permision_info.op_privileges.find(\
+			convert_fd_to_name(fd_user, server_users));
+			if (check == permision_info.op_privileges.end() || \
+			(check != permision_info.op_privileges.end() && check->second != 1))
+			{
+				msg = RED "PERMISSION DENIED\n"  RESET;
+				return ((void)(send(fd_user, msg.c_str(), msg.length(), 0)));
+			}
+		}
+		else
+		{
+			msg = RED  "USER NOT ON CHANEL\n" RESET;
+			return ((void)(send(fd_user, msg.c_str(), msg.length(), 0)));
+		}
+	}
+	if (status)
+		msg = GREEN "Chanel set on restrictive topic\n" RESET;
+	else
+		msg = GREEN "Chanel set off restrictive topic\n" RESET;
+	Broadcast_message(msg, server_users);
+	this->permision_info.restrictive_topic = status;
+}
 
-// void	chanel::set_restrictive_topic(std::string &username, bool status)
-// {
-// 	if (username != admin.username)
-// 	{
-// 		if (users.find(username) != users.end())
-// 		{
-// 			std::map<std::string , int>::iterator check = password_info.op_privileges.find(username);
-// 			if (check == password_info.op_privileges.end() || \
-// 			(check != password_info.op_privileges.end() && check->second != 1))
-// 				return ((void)std::cout << RED << "PERMISSION DENIED" << RESET << std::endl);
-// 		}
-// 		else
-// 			return ((void)std::cout << RED << "USER NOT ON CHANEL" << RESET << std::endl);
-// 	}
-// 	this->permission_info.restrictive_topic = status;
-// }
+void	restrictive_topic_manager(int fd_user, bool status, std::string &chanel_name, std::map<std::string , Chanel> &chanels\
+ 		, std::map<int, Client> &server_users)
+{
+	std::string msg;
+
+	if (Check_Existng_Chanel(chanel_name, chanels))
+		chanels.find(chanel_name)->second.set_restrictive_topic(fd_user, status, server_users);
+	else
+	{
+		msg = RED "Chanel not Found\n" RESET;
+		return ((void)(send(fd_user, msg.c_str(), msg.length(), 0)));
+	}
+}
 
 void	Chanel::set_max_user(int fd_user, double max, std::map<int, Client> &server_users)
 {

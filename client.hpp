@@ -1,13 +1,12 @@
 #ifndef CLIENT_HPP
 #define CLIENT_HPP
+#include "channel.h"
 #include <iostream>
 #include <ctime>
 #include <sstream>
 #include <vector>
 #include <string>
 #include <map>
-#include "chanel.h"
-
 
 class Client {
     public :
@@ -15,22 +14,21 @@ class Client {
     char buffer[1024];
     bool auth;
     std::vector<std::string> arg;
-    std::string cmd[2];
+    std::string buff;
     std::string username;
     std::string nickname;
 };
 
-bool                        isValidnick(int fd, std::string nickname);
-std::string                 getTimestamp();
-bool                        isValidChar(char c);
-bool                        isValiduser(const std::string& user);
-void                        parss_data(int fd, std::map<int, Client> &client, std::string pass, \
-                            std::map<std::string, Chanel> &chanels);
-int                         fd_ofuser(std::string username, std::map<int, Client> client);
-void                        send_message(int fd, std::map<int , Client> client);
-std::string                 get_user(const std::string& cmd);
-void                        trim(std::string& str);
-std::vector<std::string>    splitString(const std::string& str);
+bool isValidnick(int fd, std::string nickname);
+std::string getTimestamp();
+bool isValidChar(char c);
+bool isValiduser(const std::string& user);
+void parss_data(int fd, std::map<int, Client> &client, std::string pass , std::map<std::string, Chanel> &chanels);
+int fd_ofuser(std::string username, std::map<int, Client> client);
+void send_message(int fd, std::map<int , Client> client);
+std::string get_user(const std::string& cmd);
+void trim(std::string& str);
+std::vector<std::string> splitString(const std::string& str);
 #endif 
 //rules << "Nickname rules:\n";
 //rules << "1. Must be between 1 and 9 characters long.\n";
