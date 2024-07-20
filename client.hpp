@@ -1,6 +1,6 @@
 #ifndef CLIENT_HPP
 #define CLIENT_HPP
-#include "channel.h"
+#include "chanel.h"
 #include <iostream>
 #include <ctime>
 #include <sstream>

@@ -37,7 +37,6 @@ typedef struct s_permission
 	bool						invite_only;
 	bool						restrictive_topic;
 	double						max_user;
-	// op_privileges , int for socket client as (ID) and int for status 
 	std::map<std::string , int>	op_privileges;
 }						t_permission;
 
@@ -55,7 +54,6 @@ class Chanel
 	public :
 		Chanel(int admin, std::string chanel_name , std::string topic);
 		~Chanel();
-		// void	invite_user(std::map<int, Client> &server_users, int client_fd_ask ,int user_to_invite);
 		int		Check_UserOnChanel(int fd_user);
 		void	Add_User(int fd_new_user, Client &client, std::string &pass ,std::map<int, Client> &server_users);
 		void	kick_user(int username_fd, std::string &username_to_kick, std::map<int, \
@@ -64,10 +62,10 @@ class Chanel
 		void	invite_user(int fd_user, std::string &username, std::map<int, Client> &server_users);
 		void	set_password(int &fd_user, const std::string &pass, bool status, std::map<int, Client> &server_users);
 		void	set_invite_only(int fd_user, bool status, std::map<int, Client> &server_users);
-		// void	set_restrictive_topic(bool status);
+		void	set_restrictive_topic(int fd_user, bool status, std::map<int, Client> &server_users);
 		void	set_max_user(int fd_user, double max, std::map<int, Client> &server_users);
 		void	set_op_privileges(int fd_user, std::string &user_to_rank, int status, std::map<int, Client> &server_users);
-		void	Broadcast_message(std::string msg, std::map<int, Client> &server_users);
+		void	Broadcast_message(std::string msg, std::map<int, Client> &server_users, int fd);
 		void	set_admin(int new_admin);
 };
 
@@ -91,4 +89,6 @@ void		priviliges_manager(int fd_user, std::string &user_to_rank, int status, std
 			std::map<std::string , Chanel> &chanels , std::map<int, Client> &server_users);
 void		Max_user_manager(int fd_user, double max, std::string &chanel_name , \
 			std::map<std::string , Chanel> &chanels , std::map<int, Client> &server_users);
+void		restrictive_topic_manager(int fd_user, bool status, std::string &chanel_name, std::map<std::string , Chanel> &chanels\
+ 			, std::map<int, Client> &server_users);
 #endif
