@@ -11,13 +11,8 @@ void	Chanel::set_new_topic(int fd_user, std::string &topic, std::map<int, Client
 		{
 			if (this->permision_info.restrictive_topic == true)
 			{
-				std::map<std::string , int>::iterator check = permision_info.op_privileges.find(convert_fd_to_name(fd_user, server_users));
-				if (check == permision_info.op_privileges.end() || \
-				(check != permision_info.op_privileges.end() && check->second != 1))
-				{
-					msg = RED  "PERMISSION DENIED\n"  RESET;
-					return ((void)(send(fd_user, msg.c_str(), msg.length(), 0)));
-				}
+				if (!permission_check(fd_user, server_users))
+					return ;
 			}
 		}
 		else
@@ -52,18 +47,12 @@ void	Chanel::set_restrictive_topic(int fd_user, bool status, std::map<int, Clien
 	{
 		if (users.find(fd_user) != users.end())
 		{
-			std::map<std::string , int>::iterator check = permision_info.op_privileges.find(\
-			convert_fd_to_name(fd_user, server_users));
-			if (check == permision_info.op_privileges.end() || \
-			(check != permision_info.op_privileges.end() && check->second != 1))
-			{
-				msg = RED "PERMISSION DENIED\n"  RESET;
-				return ((void)(send(fd_user, msg.c_str(), msg.length(), 0)));
-			}
+			if (!permission_check(fd_user, server_users))
+				return ;
 		}
 		else
 		{
-			msg = RED  "USER NOT ON CHANEL\n" RESET;
+			msg = RED  "You're NOT ON CHANEL\n" RESET;
 			return ((void)(send(fd_user, msg.c_str(), msg.length(), 0)));
 		}
 	}

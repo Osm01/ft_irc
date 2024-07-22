@@ -6,8 +6,7 @@ void	Invite_manager(int fd_user, std::string &to_invite, std::string chanel_name
 {
 	std::string msg;
 
-	if (Check_UserOnServer(server_users, fd_user) && Check_UserOnServer(server_users, \
-	convert_name_to_fd(to_invite, server_users)))
+	if (Check_UserOnServer(server_users, convert_name_to_fd(to_invite, server_users)))
 	{
 		if (Check_Existng_Chanel(chanel_name, chanels))
 			chanels.find(chanel_name)->second.invite_user(fd_user,to_invite, server_users);
@@ -57,7 +56,7 @@ void	Chanel::invite_user(int fd_user, std::string &to_invite, std::map<int, Clie
 	}
 	else
 	{
-		msg = RED  "You are not on Chanel to sent invitation\n" RESET;
+		msg = RED  "PERMISSION DENIED : You are not on chanel \n"  RESET;
 		send(fd_user, msg.c_str(), msg.length(), 0);
 	}
 }

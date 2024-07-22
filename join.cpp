@@ -34,28 +34,10 @@ void	join_user(std::string &chanel_name, std::map<std::string , Chanel> &chanels
 void	Chanel::Add_User(int fd_new_user, Client &client, std::string &pass, \
 		std::map<int, Client> &server_users)
 {
-	if (this->permision_info.invite_only)
-	{
-		std::vector<std::string>::iterator check = std::find(list_user_invited.begin(), \
-		list_user_invited.end(), convert_fd_to_name(fd_new_user, server_users));
-		if (check == list_user_invited.end())
-		{
-			std::string msg = RED "To Join Chanel You need invitation\n" RESET;
-			return((void)(send(fd_new_user, msg.c_str(), msg.length(), 0)));
-		}
-	}
-	if (this->password_info.active)
-	{
-		std::string msg;
-		if (pass != password_info.password)
-		{
-			if (pass == "")
-				msg = RED "Password to join chanel is requiered\n" RESET;
-			else
-				msg = RED "Wrong Password\n" RESET;
-			return((void)(send(fd_new_user, msg.c_str(), msg.length(), 0)));
-		}
-	}
+	if (this->permision_info.invite_only && !check_list_invitation(fd_new_user, server_users))
+		return ;
+	if (this->password_info.active && !check_password(fd_new_user, pass, server_users))
+		return ;
 	if (this->permision_info.max_user >= 0 && this->permision_info.max_user <= users.size())
 	{
 		std::string msg = RED "Chanel reach max number of users\n" RESET;

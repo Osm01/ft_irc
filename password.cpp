@@ -23,13 +23,8 @@ void	Chanel::set_password(int &fd_user, const std::string &pass, bool status, st
 	{
 		if (users.find(fd_user) != users.end())
 		{
-			std::map<std::string , int>::iterator check = permision_info.op_privileges.find(convert_fd_to_name(fd_user, server_users));
-			if (check == permision_info.op_privileges.end() || \
-			(check != permision_info.op_privileges.end() && check->second != 1))
-			{
-				msg = RED "PERMISSION DENIED\n" RESET;
-				return ((void)(send(fd_user, msg.c_str(), msg.length(), 0)));
-			}
+			if (!permission_check(fd_user, server_users))
+				return ;
 		}
 		else
 		{

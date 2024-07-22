@@ -15,18 +15,12 @@ void	Chanel::kick_user(int username_fd, std::string &username_to_kick, std::map<
 	{
 		if (this->users.find(username_fd) != this->users.end())
 		{
-			std::map<std::string , int>::iterator check = permision_info.op_privileges.find(convert_fd_to_name\
-															(username_fd, server_users));
-			if (check == permision_info.op_privileges.end() || \
-			(check != permision_info.op_privileges.end() && check->second != 1))
-			{
-				msg = RED  "PERMISSION DENIED\n"  RESET;
-				return ((void)(send(username_fd, msg.c_str(), msg.length(), 0)));
-			}
+			if (!permission_check(username_fd, server_users))
+				return ;
 		}
 		else
 		{
-			msg = RED "USER NOT ON CHANEL\n" RESET;
+			msg = RED  "PERMISSION DENIED : You are not on chanel \n"  RESET;
 			return ((void)(send(username_fd, msg.c_str(), msg.length(), 0)));
 		}
 	}

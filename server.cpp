@@ -58,6 +58,7 @@ int    Server::Handle_New_Connection()
 {
 	if ((Client_Socket = accept(Server_Socket, (struct sockaddr *)&Client_addr, &Client_addrlen)) == -1)
 			return ((std::cerr << RED <<"ERROR : Accept Connection " <<RESET <<std::endl), -1);
+	fcntl(Client_Socket, F_SETFL, O_NONBLOCK);
 	Client_event.data.fd = Client_Socket;
 	Client_event.events = EPOLLIN | EPOLLOUT;
 	if (epoll_ctl(epoll_fd, EPOLL_CTL_ADD, Client_Socket, &Client_event) == -1)

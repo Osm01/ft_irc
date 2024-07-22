@@ -16,6 +16,8 @@
 #include "client.hpp"
 #include <cstdlib>
 #include "chanel.h"
+#include <fcntl.h>
+
 
 # define RED "\033[31m"
 # define GREEN "\033[32m"

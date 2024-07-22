@@ -67,6 +67,9 @@ class Chanel
 		void	set_op_privileges(int fd_user, std::string &user_to_rank, int status, std::map<int, Client> &server_users);
 		void	Broadcast_message(std::string msg, std::map<int, Client> &server_users, int fd);
 		void	set_admin(int new_admin);
+		bool	permission_check(int username_fd, std::map<int, Client> &server_users);
+		bool	check_list_invitation(int fd_new_user, std::map<int, Client> &server_users);
+		bool	check_password(int fd_user , std::string pass, std::map<int, Client> &server_users);
 };
 
 int			Check_UserOnServer(std::map<int, Client> &server_users , int fd_user);
