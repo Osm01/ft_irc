@@ -36,7 +36,7 @@ void	Chanel::Add_User(int fd_new_user, Client &client, std::string &pass, \
 {
 	if (this->permision_info.invite_only && !check_list_invitation(fd_new_user, server_users))
 		return ;
-	if (this->password_info.active && !check_password(fd_new_user, pass, server_users))
+	if (this->password_info.active && !check_password(fd_new_user, pass))
 		return ;
 	if (this->permision_info.max_user >= 0 && this->permision_info.max_user <= users.size())
 	{

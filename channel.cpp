@@ -2,6 +2,9 @@
 #include "client.hpp"
 #include "string.h"
 
+Chanel::Chanel()
+{}
+
 Chanel::Chanel(int admin, std::string chanel_name , std::string topic)
 {
     this->admin_fd = admin;
@@ -24,17 +27,17 @@ void		Chanel::Broadcast_message(std::string msg, std::map<int, Client> &server_u
 {
 	if (Check_UserOnServer(server_users, admin_fd))
 	{
-		std::string new_msg = admin_fd == fd ?  msg : ("\n" + msg + getTimestamp() + " @" \
-		+ server_users[admin_fd].username + " :");
-		send(admin_fd, new_msg.c_str(), new_msg.length(), 0);
+		std::string new_msg = admin_fd == fd ?  msg : ("\n" + msg + BLUE + getTimestamp() + " @" \
+		+ server_users[admin_fd].username +  "(" + server_users[admin_fd].nickname + ") :");
+		send_error_message(admin_fd, new_msg);
 	}
 	for (std::map<int , Client >::iterator it = users.begin(); it != users.end(); it ++)
 	{
 		if(Check_UserOnServer(server_users, it->first))
 		{
-			std::string all_msg = (it->first == fd)  ?  msg : ("\n" + msg + getTimestamp() + " @" \
-			+ server_users[it->first].username + " :");
-			send(it->first, all_msg.c_str(), all_msg.length(), 0);
+			std::string all_msg = (it->first == fd)  ?  msg : ("\n" + msg + BLUE + getTimestamp() + " @" \
+			+ server_users[it->first].username + "(" + server_users[it->first].nickname + ") :");
+			notification_user(it->first, all_msg);
 		}
 	}
 }

@@ -9,7 +9,9 @@ void user_command(int fd,std::map<int,Client>& client, std::map<std::string, Cha
     else if(nb < 2)
         send_error_message(fd, "NOT ENOUGH ARGUMENT\n");
     else if(check_user(fd, client, chanels))
+    {
         client[fd].username = client[fd].arg[1];
+    }
 }
 
 void nick_command(int fd, std::map<int,Client>& client)
@@ -49,6 +51,13 @@ void option_mode(int fd, std::map<int,Client>& client, std::map<std::string, Cha
             ss >> max;
         }
         Max_user_manager(fd, max, client[fd].arg[2], chanels, client);
+    }
+    if (client[fd].arg[1] == "+t" || client[fd].arg[1] == "-t")
+    {
+        int status = 1;
+        if (client[fd].arg[1] == "-t")
+            status = 0;
+        restrictive_topic_manager(fd, status, client[fd].arg[2], chanels, client);
     }
 }
 

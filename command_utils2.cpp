@@ -1,6 +1,7 @@
 #include "client.hpp"
 
 void send_command_table(int client_fd, std::string user) {
+    (void) user;
     std::ostringstream oss;
 
     // Header

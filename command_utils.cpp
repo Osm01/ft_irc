@@ -101,6 +101,19 @@ bool check_mode(std::map<int, Client> client, int fd)
     }
     return (send_error_message(fd, "OPTION NOT FOUND\n") ,false);
 }
+
+
+bool isRegularFile(const std::string& path) {
+    struct stat fileInfo;
+    
+    if (stat(path.c_str(), &fileInfo) != 0) {
+        return false;
+    }
+    
+    // Check if it's a regular file
+    return S_ISREG(fileInfo.st_mode);
+}
+
 bool check_dcc(int fd, std::map<int , Client> &client)
 {
     int size = client[fd].arg.size();
@@ -111,19 +124,31 @@ bool check_dcc(int fd, std::map<int , Client> &client)
     else if(client[fd].arg[1] != "send")
         return(send_error_message(fd, "INVALIDE ARGUMENT , USAGE /dcc send [user] [file path]\n"), false);
     int fd_recev  = fd_ofuser(client[fd].arg[2], client);
+    std::ifstream file(client[fd].arg[3].c_str());
+    if(!file.is_open())
+        return(send_error_message(fd, "PATH NOT FOUND or PERMISSION DENIED\n"), false);
+    if (!isRegularFile(client[fd].arg[3]))
+        return(send_error_message(fd, "ONLY FILES TO SEND\n"), false);
     if(fd_recev >= 0)
     {
         client[fd_recev].authfile = true;
         client[fd_recev].filepath = client[fd].arg[3];
-        std::string message = "user @" + client[fd].username +  " want to send you a file do you want receive it yes/no:";
+        std::string message = "\nuser @" + client[fd].username +  " want to send you a file(" \
+         + client[fd].arg[3] + ") do you want receive it yes/no:";
         if(fd_recev != fd)
-            notification_user(fd_recev, "\n" + message);
-        else if(fd_recev == fd)
             notification_user(fd_recev,  message);
+        else if(fd_recev == fd)
+            notification_user(fd_recev,  "do you want receive this file(" + client[fd].arg[3] + ") yes/no:");
     }
     if(fd_recev < 0)
         return(send_error_message(fd, "User not found\n"), false);
     return true;
+}
+bool check_topic(int fd, std::map<int , Client> &client)
+{
+    if(client[fd].arg.size() > 3 || client[fd].arg.size() < 2 )
+        return(send_error_message(fd, "ERROR ARGUMENT\n"), false);
+    return(true);
 }
 bool check_cmd(int fd, std::map<int , Client> &client)
 {
@@ -137,6 +162,8 @@ bool check_cmd(int fd, std::map<int , Client> &client)
     bool check = true;
     for(int i = 0; i < 11; i++)
     {
+    if(client[fd].arg[0] == "/topic")
+        return(check_topic(fd, client));
     if(client[fd].arg[0] == "/dcc")
         return(check_dcc(fd, client));
     if(client[fd].arg[0] == "/mode")
@@ -151,7 +178,7 @@ bool check_cmd(int fd, std::map<int , Client> &client)
     }
     else if(cmds[i] == client[fd].arg[0])
     {
-    if(client[fd].arg.size() > 3  && client[fd].arg[0] != "/mode")
+    if(client[fd].arg.size() > 3  && client[fd].arg[0] != "/mode" && client[fd].arg[0] != "/privmsg" && client[fd].arg[0] != "/send")
        return(send_error_message(fd, "TO MANY ARGUMENT\n"), false);
     else if(client[fd].arg.size() < 3 && client[fd].arg[0] != "/user" && client[fd].arg[0] != "/nick" && client[fd].arg[0] != "/help")
         return(send_error_message(fd, "NOT ENOUGH ARGUMENT\n"), false);

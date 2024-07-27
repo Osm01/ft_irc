@@ -4,14 +4,11 @@
 
 void send_file(int fd,  std::map<int,Client>& client)
 {
-    if(client[fd].authfile)
+    if(client[fd].authfile && !client[fd].arg.empty() && client[fd].arg[0] == "yes")
     {
-        file_transfer(fd, client[fd].arg[2], client[fd].filepath, client);
-            // client[fd].filepath;
-            //fd : when send file to user
+        file_transfer(fd, client[fd].username, client[fd].filepath, client);
+        send(fd, "\n", 1, 0);
     }
-    // else if(!client[fd].authfile)
-    //     send_error_message(fd, "COMMAND NOT FOUND\n");
     client[fd].authfile = false;
 }
 
@@ -24,8 +21,6 @@ void handle_command(int fd, std::map<int,Client>& client, std::map<std::string, 
     bool check = check_cmd(fd, client);
     if (cmd == "/send" && check)
         send_command(fd, client, chanels);
-    else if (client[fd].authfile &&  cmd != "/dcc")
-        send_file(fd, client);
     else if(cmd == "/privmsg" && check)
         send_message(fd, client);
     else if(cmd == "/help")
@@ -44,12 +39,14 @@ void handle_command(int fd, std::map<int,Client>& client, std::map<std::string, 
         topic_manager(fd, client[fd].arg[2], client[fd].arg[1], client, chanels);
     else if(cmd == "/mode" && check)
         mode_command(fd, client, chanels);
+    else if (client[fd].authfile &&  cmd != "/dcc")
+        send_file(fd, client);
 }
 
 void parss_data(int fd, std::map<int,Client>& client, std::string& password, std::map<std::string, Chanel>& chanels)
 {
     (void) chanels;
-    char *buffer = client[fd].buffer;
+    // char *buffer = client[fd].buffer;
     std::string buff = client[fd].buff;
     if(!client[fd].auth)
         authentication(fd, client, password);
@@ -62,7 +59,7 @@ void parss_data(int fd, std::map<int,Client>& client, std::string& password, std
     handle_command(fd, client, chanels);
     if(!client[fd].authfile)
     {
-        std::string str = BLUE  + getTimestamp() + " @" + client[fd].username + " :" RESET;
+        std::string str = BLUE  + getTimestamp() + " @" + client[fd].username + "(" + client[fd].nickname + ") :" RESET;
         send(fd, str.c_str(), str.length(), 0);
     }
     }

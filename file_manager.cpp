@@ -11,7 +11,6 @@ void   file_transfer(int sender, std::string reciever, std::string path, std::ma
         std::vector<char> buffer(1024);
         std::ifstream file (path.c_str());
 
-        std::cout << "PATH is : " << path << std::endl;
         if (!file.is_open())
         {
             msg = RED "Path not found\n" RESET;

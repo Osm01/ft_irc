@@ -15,6 +15,7 @@ class Client {
     char buffer[1024];
     bool auth;
     bool authfile;
+    std::string recvname;
     std::string filepath;
     std::vector<std::string> arg;
     std::string buff;
@@ -49,8 +50,3 @@ std::vector<std::string> splitString(const std::string& str);
 void parss_data(int fd, std::map<int, Client>& client,  std::string& password, std::map<std::string, Chanel>& chanels);
 bool check_user(int fd, std::map<int , Client> &clients, std::map<std::string , Chanel>& chanels);
 #endif 
-//rules << "Nickname rules:\n";
-//rules << "1. Must be between 1 and 9 characters long.\n";
-//rules << "2. May contain letters (A-Z, a-z), digits (0-9), and special characters.\n";
-//rules << "3. Allowed special characters are: - [ ] \\ _ ^ { }.\n";
-//rules << "4. The first character must be a letter or an allowed special character.\n";

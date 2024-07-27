@@ -42,7 +42,7 @@ typedef struct s_permission
 
 class Chanel
 {
-    public :
+    private :
 		std::string					chanel_global_name;
         std::string					topic;
 		int							admin_fd;
@@ -53,23 +53,25 @@ class Chanel
 
 	public :
 		Chanel(int admin, std::string chanel_name , std::string topic);
+		Chanel();
 		~Chanel();
-		int		Check_UserOnChanel(int fd_user);
-		void	Add_User(int fd_new_user, Client &client, std::string &pass ,std::map<int, Client> &server_users);
-		void	kick_user(int username_fd, std::string &username_to_kick, std::map<int, \
-				Client> &server_users);
-		void	set_new_topic(int fd_user, std::string &topic, std::map<int, Client> &server_users);
-		void	invite_user(int fd_user, std::string &username, std::map<int, Client> &server_users);
-		void	set_password(int &fd_user, const std::string &pass, bool status, std::map<int, Client> &server_users);
-		void	set_invite_only(int fd_user, bool status, std::map<int, Client> &server_users);
-		void	set_restrictive_topic(int fd_user, bool status, std::map<int, Client> &server_users);
-		void	set_max_user(int fd_user, double max, std::map<int, Client> &server_users);
-		void	set_op_privileges(int fd_user, std::string &user_to_rank, int status, std::map<int, Client> &server_users);
-		void	Broadcast_message(std::string msg, std::map<int, Client> &server_users, int fd);
-		void	set_admin(int new_admin);
-		bool	permission_check(int username_fd, std::map<int, Client> &server_users);
-		bool	check_list_invitation(int fd_new_user, std::map<int, Client> &server_users);
-		bool	check_password(int fd_user , std::string pass, std::map<int, Client> &server_users);
+		int			Check_UserOnChanel(int fd_user);
+		void		Add_User(int fd_new_user, Client &client, std::string &pass ,std::map<int, Client> &server_users);
+		void		kick_user(int username_fd, std::string &username_to_kick, std::map<int, \
+					Client> &server_users);
+		void		set_new_topic(int fd_user, std::string &topic, std::map<int, Client> &server_users);
+		void		invite_user(int fd_user, std::string &username, std::map<int, Client> &server_users);
+		void		set_password(int &fd_user, const std::string &pass, bool status, std::map<int, Client> &server_users);
+		void		set_invite_only(int fd_user, bool status, std::map<int, Client> &server_users);
+		void		set_restrictive_topic(int fd_user, bool status, std::map<int, Client> &server_users);
+		void		set_max_user(int fd_user, double max, std::map<int, Client> &server_users);
+		void		set_op_privileges(int fd_user, std::string &user_to_rank, int status, std::map<int, Client> &server_users);
+		void		Broadcast_message(std::string msg, std::map<int, Client> &server_users, int fd);
+		void		set_admin(int new_admin);
+		bool		permission_check(int username_fd, std::map<int, Client> &server_users);
+		bool		check_list_invitation(int fd_new_user, std::map<int, Client> &server_users);
+		bool		check_password(int fd_user , std::string pass);
+		std::string	get_topic() const;
 };
 
 int			Check_UserOnServer(std::map<int, Client> &server_users , int fd_user);

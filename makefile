@@ -1,7 +1,7 @@
 
 NAME = ircserv
 COMPI = c++ -std=c++98
-ERRORS = #-Wall -Wextra -Werror -g
+ERRORS = -Wall -Wextra -Werror 
 
 CPP_FILES = *.cpp
 

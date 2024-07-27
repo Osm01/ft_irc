@@ -1,6 +1,12 @@
 # include "channel.h"
 # include "client.hpp"
 
+
+std::string	Chanel::get_topic() const
+{
+	return (this->topic);
+}
+
 void	Chanel::set_new_topic(int fd_user, std::string &topic, std::map<int, Client> &server_users)
 {
 	std::string msg;
@@ -31,7 +37,15 @@ void	topic_manager(int fd_user, std::string &topic, std::string &chanel_name ,st
 		std::map<std::string , Chanel> &chanels)
 {
 	if (Check_Existng_Chanel(chanel_name, chanels))
-		chanels.find(chanel_name)->second.set_new_topic(fd_user, topic, server_users);
+	{
+		if (server_users[fd_user].arg.size() == 2)
+		{
+			std::string msg = GREEN + chanels.find(chanel_name)->second.get_topic() + "\n" RESET;
+			send (fd_user, msg.c_str(), msg.length(), 0);
+		}
+		else
+			chanels.find(chanel_name)->second.set_new_topic(fd_user, topic, server_users);
+	}
 	else
 	{
 		std::string msg = RED  "Chanel not Found\n"  RESET;

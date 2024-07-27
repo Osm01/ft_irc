@@ -18,6 +18,7 @@
 #include "channel.h"
 #include <fcntl.h>
 #include <fstream>
+#include <sys/stat.h>
 
 
 # define RED "\033[31m"

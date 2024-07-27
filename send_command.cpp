@@ -3,7 +3,13 @@
 
 std::string get_message(std::vector<std::string> &str)
 {
-    return(str[2] + "\n");
+    size_t i = 2;
+    std::string msg;
+
+    while (i < str.size())
+        msg += str[i++] + " ";
+    msg += "\n";
+    return(msg);
 }
 
 int fd_ofuser(std::string username, std::map<int, Client> client) {
@@ -18,7 +24,7 @@ int fd_ofuser(std::string username, std::map<int, Client> client) {
 
 void send_message(int fd, std::map<int , Client> client)
 {
-    if(client[fd].arg.size() > 3 || client[fd].arg.size() < 3)
+    if((client[fd].arg.size() > 3 || client[fd].arg.size() < 3) && client[fd].arg[0] != "/privmsg")
     {
         send_error_message(fd, "INCOMPLET ARGUMENT\n");
         return ;
@@ -27,7 +33,7 @@ void send_message(int fd, std::map<int , Client> client)
    if(fd_user < 0)
         return((void)send_error_message(fd, "USER NOT FOUND\n"));
    std::string message = GREEN "message from @" + client[fd].username  + " :" + get_message(client[fd].arg) + RESET;
-   std::string new_messag = (fd_user == fd) ?  message : "\n" + message + BLUE + getTimestamp() + " @" + client[fd_user].username + " :" RESET;
+   std::string new_messag = (fd_user == fd) ?  message : "\n" + message + BLUE + getTimestamp() + " @" + client[fd_user].username + "(" + client[fd_user].nickname + ") :" RESET;
    if(new_messag.empty())
         return((void)send_error_message(fd, "NO MESSAGE\n"));
    else
@@ -41,7 +47,7 @@ void send_command(int fd, std::map<int,Client>& client, std::map<std::string, Ch
         {
             if(chanels.find(client[fd].arg[1])->second.Check_UserOnChanel(fd))
             {
-                std::string msg = GREEN "-->\nmessage from @" + client[fd].username + " in channel #" + client[fd].arg[1] + " : " + client[fd].arg[2] + "\n" RESET;
+                std::string msg = GREEN "-->\nmessage from @" + client[fd].username + " in channel #" + client[fd].arg[1] + " : " + get_message(client[fd].arg) + RESET;
                 chanels.find(client[fd].arg[1])->second.Broadcast_message(msg, client, fd);
             }
             else

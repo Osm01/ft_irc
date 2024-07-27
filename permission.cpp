@@ -26,7 +26,7 @@ bool	Chanel::check_list_invitation(int fd_new_user, std::map<int, Client> &serve
 	return true;
 }
 
-bool	Chanel::check_password(int fd_new_user, std::string pass, std::map<int, Client> &server_users)
+bool	Chanel::check_password(int fd_new_user, std::string pass)
 {
 	std::string msg;
 	if (pass != password_info.password)

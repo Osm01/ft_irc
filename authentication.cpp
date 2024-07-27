@@ -27,8 +27,7 @@ bool check_user(int fd, std::map<int , Client> &clients, std::map<std::string, C
         for(std::map<std::string , Chanel>::iterator it = chanels.begin(); it != chanels.end(); ++it)
         {
             if(username == it->first)
-                send_error_message(fd, "IS A CHANEL NAME\n");
-            return (false);
+                return(send_error_message(fd, "IS A CHANEL NAME\n"), false);
         }
         }
     return true; // No duplicate usernames found
@@ -69,7 +68,7 @@ void set_nickname(int fd,  std::map<int,Client>& client)
    if(!buffer.empty() && !client[fd].username.empty() && isValidnick(fd, buffer))
     {
         client[fd].nickname = client[fd].buff;
-        std::string message = GREEN "Welcome, for manual enter /help\n" BLUE + getTimestamp() + " @" + client[fd].username + " :" RESET;
+        std::string message = GREEN "Welcome, for manual enter /help\n" BLUE + getTimestamp() + " @" + client[fd].username + "(" + client[fd].nickname + ") :" RESET;
         send(fd, message.c_str(), message.length() , 0);
     }
 }
