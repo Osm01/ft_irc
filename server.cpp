@@ -63,7 +63,8 @@ int    Server::Handle_New_Connection()
 	Client_event.events = EPOLLIN | EPOLLOUT;
 	if (epoll_ctl(epoll_fd, EPOLL_CTL_ADD, Client_Socket, &Client_event) == -1)
 		return ((std::cerr << RED << "ERROR : EPOOL CTL ADD CLIENT" << RESET << std::endl) , -1);
-	send(Client_Socket, "\033[37mENTER PASSWORD TO ACCESS THE SERVER\n: ", 44, 0);
+	std::string message = WHITE "ENTER PASSWORD : " RESET ;
+	send(Client_Socket, message.c_str() , message.length(), 0);
 	return Client_Socket;
 }
 
@@ -75,7 +76,7 @@ void    Server::Handle_Close_Connection(int i)
 	std::cerr << "closed connection\n";
 }
 
-void    Server::Handle_Client_Data(int i, std::map<int, Client> &client, std::map<std::string, Chanel> &chanels)
+void    Server::Handle_Client_Data(int i, std::map<int, Client>& client, std::map<std::string, Chanel>& chanels)
 {
 	int fd = Events[i].data.fd;
 	if (Events[i].events & EPOLLIN)
@@ -130,7 +131,10 @@ int	Server::Multiplexing()
 			{
 				int nm = Handle_New_Connection();
 				if(nm > 0)
+				{
 					client[nm].auth = false;
+					client[nm].authfile = false; 
+				}
 			}
 			else
 				Handle_Client_Data(i, client, chanels);

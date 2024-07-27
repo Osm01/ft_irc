@@ -1,4 +1,4 @@
-#include "chanel.h"
+#include "channel.h"
 #include "client.hpp"
 #include "string.h"
 
@@ -24,7 +24,7 @@ void		Chanel::Broadcast_message(std::string msg, std::map<int, Client> &server_u
 {
 	if (Check_UserOnServer(server_users, admin_fd))
 	{
-		std::string new_msg = admin_fd == fd ? msg : ("\n" + msg + getTimestamp() + " @" \
+		std::string new_msg = admin_fd == fd ?  msg : ("\n" + msg + getTimestamp() + " @" \
 		+ server_users[admin_fd].username + " :");
 		send(admin_fd, new_msg.c_str(), new_msg.length(), 0);
 	}
@@ -32,7 +32,6 @@ void		Chanel::Broadcast_message(std::string msg, std::map<int, Client> &server_u
 	{
 		if(Check_UserOnServer(server_users, it->first))
 		{
-			std::cerr <<"fd = " << fd << "it->first = " << it->first << std::endl;
 			std::string all_msg = (it->first == fd)  ?  msg : ("\n" + msg + getTimestamp() + " @" \
 			+ server_users[it->first].username + " :");
 			send(it->first, all_msg.c_str(), all_msg.length(), 0);
